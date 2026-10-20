@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Camera, CameraOff, Check, ChevronRight, CircleHelp, Cpu, Hand, Keyboard, RotateCcw, ScanLine, ShieldCheck, Sparkles, Trophy, X } from "lucide-react";
+import { ArrowRight, Camera, CameraOff, Check, ChevronRight, CircleHelp, Cpu, Hand, Keyboard, RotateCcw, ScanLine, ShieldCheck, Sparkles, Trophy, Users, X } from "lucide-react";
 import type { GestureRecognizer } from "@mediapipe/tasks-vision";
 import { gestureMove, icons, moves, outcome, randomMove, type Move, type Outcome } from "../lib/game";
 import { playerMoves } from "../lib/tracking";
@@ -173,6 +173,7 @@ export default function Home() {
     <header className="topbar"><a href="/" className="brand"><span className="brand-icon"><Hand size={23} /></span>gesto<span className="brand-light">arena</span><span className="beta">BETA</span></a><button className="help-button" onClick={() => setHelp(true)}><CircleHelp size={17} /> Cómo jugar</button></header>
     <section className="intro"><div className="eyebrow"><span /> EL CLÁSICO, CON UN NUEVO MOVIMIENTO</div><h1>Tu mano. Tu jugada.<br /><span>{duo ? "¿Quién gana esta ronda?" : "¿Le ganas a la compu?"}</span></h1><p>Piedra, papel o tijera, como siempre lo jugaste.<br className="mobile-break" /> Ahora tu cámara es el control.</p></section>
     <div className="mode-selector" role="group" aria-label="Modo de juego">{(["cpu", "duo"] as const).map(value => <button key={value} aria-pressed={mode === value} onClick={() => { if (mode === value) return; stopCamera(); setMode(value); setRounds([]); setManual(false); setError(""); }}>{value === "cpu" ? <Cpu size={16} /> : <Hand size={16} />}{value === "cpu" ? "Contra la computadora" : "Dos personas"}</button>)}</div>
+    <a className="rooms-entry" href="/salas"><span className="rooms-entry-icon"><Users size={23} /></span><span><strong>La arena se juega entre amigos.</strong><small>Crea una sala o entra por código · Hasta 4 jugadores · Sin cuentas</small></span><span className="rooms-entry-cta">Jugar con amigos <ArrowRight size={17} /></span></a>
     {duo && <p className="duo-instructions">Una cámara, dos personas. Jugador 1 a la izquierda de la pantalla y jugador 2 a la derecha. Cada quien muestra una mano sin cruzar el centro.</p>}
     <section className="arena" aria-label="Zona de juego">
       <div className="play-area"><div className="panel-heading"><span><span className={camera === "on" ? "dot live" : "dot"} /> {manual ? "MODO MANUAL" : "TU CÁMARA"}</span><span className="small-muted">{manual ? "Sin cámara" : camera === "on" ? "En vivo" : "Esperando conexión"}</span></div>
