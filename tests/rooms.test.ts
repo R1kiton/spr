@@ -9,6 +9,7 @@ import {
   settleRoom,
   MAX_PLAYERS,
   ROUND_DURATION_MS,
+  ROUND_RESULT_MS,
   type RoomMode,
   type StoredRoom,
 } from "../lib/rooms";
@@ -269,4 +270,23 @@ test("public snapshots are detached copies and cannot edit authoritative history
   assert.equal(room.history[0].moves.p1, "piedra");
   assert.equal(room.moves.p1, "piedra");
   assert.equal(room.players[0].score, 1);
+});
+
+test("a resolved duel round opens the next one by itself after the result pause", () => {
+  const between = play(start(2, "solo", 3), ["piedra", "tijera"], NOW + 20);
+  assert.equal(between.phase, "between");
+  assert.equal(between.nextAt, NOW + 21 + ROUND_RESULT_MS);
+  assert.equal(settleRoom(between, between.nextAt! - 1).phase, "between");
+  const next = settleRoom(between, between.nextAt!);
+  assert.equal(next.phase, "playing");
+  assert.equal(next.round, 2);
+  assert.equal(next.nextAt, null);
+  assert.equal(next.deadline, between.nextAt! + ROUND_DURATION_MS);
+  let last = next;
+  for (let round = 2; round <= 3; round++) {
+    last = play(last, ["piedra", "tijera"], (last.deadline ?? 0) - 1000);
+    if (round < 3) last = settleRoom(last, last.nextAt!);
+  }
+  assert.equal(last.phase, "finished");
+  assert.equal(last.nextAt, null, "A finished match does not schedule another round.");
 });

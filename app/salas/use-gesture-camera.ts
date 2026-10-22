@@ -3,42 +3,52 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GestureRecognizer } from "@mediapipe/tasks-vision";
 import { gestureMove, type Move } from "../../lib/game";
+import { idleHold, stepHold } from "../../lib/hold";
 
-/** Video and gesture recognition stay in this browser. Only the chosen move is submitted. */
-export function useGestureCamera(onCapture: (move: Move) => void) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+/**
+ * Video and gesture recognition stay in this browser. Only the chosen move is submitted.
+ * Like the solo arena, a move fires by holding one gesture for HOLD_MS while `active` is true.
+ */
+export function useGestureCamera(onCapture: (move: Move) => void, active: boolean) {
+  const video = useRef<HTMLVideoElement | null>(null);
+  const canvas = useRef<HTMLCanvasElement | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const recognizer = useRef<GestureRecognizer | null>(null);
   const frame = useRef(0);
   const generation = useRef(0);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sample = useRef<{ move: Move | null; since: number; at: number }>({ move: null, since: 0, at: 0 });
+  const hold = useRef(idleHold);
+  const activeRef = useRef(active);
   const captureCallback = useRef(onCapture);
   const [status, setStatus] = useState<"off" | "loading" | "on">("off");
   const [detected, setDetected] = useState<Move | null>(null);
-  const [countdown, setCountdown] = useState<number | null>(null);
+  const [holdState, setHoldState] = useState({ progress: 0, spent: false });
   const [error, setError] = useState("");
   useEffect(() => { captureCallback.current = onCapture; }, [onCapture]);
+  useEffect(() => { activeRef.current = active; }, [active]);
 
-  const cancelCapture = useCallback(() => {
-    if (timer.current) clearInterval(timer.current);
-    timer.current = null;
-    setCountdown(null);
+  // The <video> moves between the lobby panel and the game stage; reattach the stream to whichever is mounted.
+  const videoRef = useCallback((element: HTMLVideoElement | null) => {
+    video.current = element;
+    if (element && stream.current && element.srcObject !== stream.current) {
+      element.srcObject = stream.current;
+      void element.play().catch(() => undefined);
+    }
   }, []);
+  const canvasRef = useCallback((element: HTMLCanvasElement | null) => { canvas.current = element; }, []);
 
   const stop = useCallback(() => {
     generation.current++;
     cancelAnimationFrame(frame.current);
-    cancelCapture();
     stream.current?.getTracks().forEach(track => track.stop());
     stream.current = null;
     recognizer.current?.close();
     recognizer.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-    sample.current = { move: null, since: 0, at: 0 };
+    if (video.current) video.current.srcObject = null;
+    hold.current = idleHold;
+    setHoldState({ progress: 0, spent: false });
     setStatus("off");
     setDetected(null);
-  }, [cancelCapture]);
+  }, []);
 
   useEffect(() => {
     const hide = () => { if (document.hidden) stop(); };
@@ -67,10 +77,9 @@ export function useGestureCamera(onCapture: (move: Move) => void) {
       });
       if (token !== generation.current) { model.close(); acquired.getTracks().forEach(track => track.stop()); return; }
       recognizer.current = model;
-      const element = videoRef.current;
-      if (!element) throw new Error("No se pudo preparar la cámara.");
-      element.srcObject = acquired;
-      await element.play();
+      if (!video.current) throw new Error("No se pudo preparar la cámara.");
+      video.current.srcObject = acquired;
+      await video.current.play();
       if (token !== generation.current) return;
       setStatus("on");
       let previousTime = -1;
@@ -78,14 +87,39 @@ export function useGestureCamera(onCapture: (move: Move) => void) {
       const loop = (now: number) => {
         if (token !== generation.current) return;
         try {
-          if (element.readyState >= 2 && element.currentTime !== previousTime && now - previousFrame >= 90) {
+          const element = video.current;
+          if (element && element.readyState >= 2 && element.currentTime !== previousTime && now - previousFrame >= 90) {
             previousTime = element.currentTime;
             previousFrame = now;
             const result = model!.recognizeForVideo(element, now);
             const category = result.gestures[0]?.[0];
             const move = category ? gestureMove(category.categoryName, category.score) : null;
-            sample.current = { move, since: sample.current.move === move ? sample.current.since : now, at: now };
             setDetected(move);
+            // Outside a playable moment nothing fires, and the hold restarts once play opens.
+            if (!activeRef.current) hold.current = { ...hold.current, since: now, seen: now };
+            const step = activeRef.current ? stepHold(hold.current, move, now) : { hold: hold.current, progress: 0, fire: null };
+            hold.current = step.hold;
+            const progress = Math.round(step.progress * 100) / 100, spent = step.hold.spent;
+            setHoldState(old => old.progress === progress && old.spent === spent ? old : { progress, spent });
+            if (step.fire) captureCallback.current(step.fire);
+            const ctx = canvas.current?.getContext("2d");
+            if (ctx) {
+              // Canvas can't read CSS variables, so resolve the token colors on the canvas itself.
+              const tokens = getComputedStyle(canvas.current!);
+              ctx.clearRect(0, 0, 640, 480);
+              ctx.strokeStyle = tokens.getPropertyValue("--you").trim();
+              ctx.fillStyle = tokens.getPropertyValue("--gold").trim();
+              ctx.lineWidth = 3;
+              for (const points of result.landmarks) {
+                for (const connection of GestureRecognizer.HAND_CONNECTIONS) {
+                  ctx.beginPath();
+                  ctx.moveTo(points[connection.start].x * 640, points[connection.start].y * 480);
+                  ctx.lineTo(points[connection.end].x * 640, points[connection.end].y * 480);
+                  ctx.stroke();
+                }
+                points.forEach(point => { ctx.beginPath(); ctx.arc(point.x * 640, point.y * 480, 3, 0, Math.PI * 2); ctx.fill(); });
+              }
+            }
           }
           frame.current = requestAnimationFrame(loop);
         } catch { stop(); setError("Se interrumpió el reconocimiento. Activa la cámara de nuevo o elige un gesto con los botones."); }
@@ -104,21 +138,5 @@ export function useGestureCamera(onCapture: (move: Move) => void) {
     }
   }, [stop]);
 
-  const capture = useCallback(() => {
-    if (status !== "on" || timer.current) return;
-    setError("");
-    const deadline = performance.now() + 3000;
-    setCountdown(3);
-    timer.current = setInterval(() => {
-      const now = performance.now();
-      const left = Math.ceil((deadline - now) / 1000);
-      if (left > 0) { setCountdown(left); return; }
-      cancelCapture();
-      const current = sample.current;
-      if (current.move && now - current.at < 400 && now - current.since >= 350) captureCallback.current(current.move);
-      else setError("No capturamos un gesto estable. Mantén una sola mano visible o elige un botón antes de que termine la ronda.");
-    }, 80);
-  }, [status, cancelCapture]);
-
-  return { videoRef, status, detected, countdown, error, start, stop, capture, cancelCapture };
+  return { videoRef, canvasRef, status, detected, holdState, error, start, stop };
 }

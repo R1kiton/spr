@@ -10,10 +10,10 @@ const rivalColor = "var(--rival)";
 const beats: Record<Move, Move> = { piedra: "tijera", papel: "piedra", tijera: "papel" };
 const secondsUntil = (time: number, now: number) => Math.max(0, Math.ceil((time - now) / 1000));
 
-type Props = { room: PublicRoom; now: number; host: boolean; pending: string; captureBusy: boolean; onMove: (move: Move) => void; onRematch: () => void };
+type Props = { room: PublicRoom; now: number; host: boolean; pending: string; onMove: (move: Move) => void; onRematch: () => void };
 
 /** A running or finished tournament: the viewer's match on top, the whole bracket below. `now` is server time. */
-export function TournamentView({ room, now, host, pending, captureBusy, onMove, onRematch }: Props) {
+export function TournamentView({ room, now, host, pending, onMove, onRematch }: Props) {
   const tournament = room.tournament!;
   const total = tournament.rounds.length;
   const names = new Map(tournament.entrants.map(entrant => [entrant.id, entrant.name]));
@@ -39,7 +39,7 @@ export function TournamentView({ room, now, host, pending, captureBusy, onMove, 
     <section className="room-card tournament-mine">
       {finished ? <div className="tournament-champion"><span className="room-result-icon room-result-final"><Trophy size={36} /></span><h2>{champion ? `¡${nameOf(champion)}${champion === me ? " (tú)" : ""} gana el torneo!` : "El torneo terminó sin campeón"}</h2><p>{champion === me ? "Ganaste todos tus enfrentamientos. La arena es tuya." : "Así quedó el bracket. La revancha está a un clic."}</p>
         {host ? <button className="primary room-result-next" disabled={!!pending} onClick={onRematch}><span><RotateCcw size={17} /> Preparar otro torneo</span></button> : <span className="room-host-wait"><LoaderCircle className="room-spinner" size={14} /> El anfitrión puede preparar otro torneo.</span>}</div>
-        : match ? <MatchCard match={match} me={me!} now={now} nameOf={nameOf} ownMove={room.ownMove} pending={pending} captureBusy={captureBusy} onMove={onMove} />
+        : match ? <MatchCard match={match} me={me!} now={now} nameOf={nameOf} ownMove={room.ownMove} pending={pending} onMove={onMove} />
         : waitingNext ? <div className="tournament-waiting"><span className="room-result-icon"><CheckCheck size={31} /></span><h3>Ganaste tu enfrentamiento.</h3><p>Esperando a que terminen los demás para la siguiente ronda.</p></div>
         : eliminatedIn ? <div className="tournament-waiting"><h3>Quedaste fuera en {roundName(eliminatedIn.round, total).toLowerCase()}.</h3><p>Sigue el torneo desde el bracket. Pronto habrá revancha.</p></div>
         : <div className="tournament-waiting"><h3>Estás viendo el torneo.</h3></div>}
@@ -56,7 +56,7 @@ export function TournamentView({ room, now, host, pending, captureBusy, onMove, 
   </>;
 }
 
-function MatchCard({ match, me, now, nameOf, ownMove, pending, captureBusy, onMove }: { match: PublicMatch; me: string; now: number; nameOf: (id: string | null) => string; ownMove: Move | null; pending: string; captureBusy: boolean; onMove: (move: Move) => void }) {
+function MatchCard({ match, me, now, nameOf, ownMove, pending, onMove }: { match: PublicMatch; me: string; now: number; nameOf: (id: string | null) => string; ownMove: Move | null; pending: string; onMove: (move: Move) => void }) {
   const rival = match.a === me ? match.b! : match.a!;
   const lastGame = match.games.at(-1);
   const open = match.deadline !== null && now < match.deadline && (match.startsAt === null || now >= match.startsAt);
@@ -70,7 +70,7 @@ function MatchCard({ match, me, now, nameOf, ownMove, pending, captureBusy, onMo
     {lastGame && <div className="tournament-last" aria-live="polite"><MoveIcon move={lastGame.moves[me] ?? "piedra"} accent={youColor} className={lastGame.moves[me] ? "" : "is-empty"} /><span>{lastGame.winner === me ? "Ganaste el juego anterior" : lastGame.winner === rival ? `${nameOf(rival)} ganó el juego anterior` : "Empate, se repite"}</span><MoveIcon move={lastGame.moves[rival] ?? "piedra"} side="p2" accent={rivalColor} className={lastGame.moves[rival] ? "" : "is-empty"} /></div>}
     {ownMove ? <div className="room-submitted" role="status"><span className="room-submitted-emoji"><MoveIcon move={ownMove} accent={youColor} /></span><h3>Ya elegiste {ownMove}.</h3><p>{match.ready.includes(rival) ? "Revelando…" : `Esperando a ${nameOf(rival)}.`}</p></div>
       : <><p className="room-card-intro">{open ? "Elige un gesto. Se confirma al tocarlo y ya no puedes cambiarlo." : "Prepárate para el siguiente juego."}</p>
-        <div className="room-move-buttons">{moves.map(move => <button key={move} disabled={!open || !!pending || captureBusy} onClick={() => onMove(move)}><HandIcon move={move} wrap={youColor} /><strong>{move}</strong><small>Vence a {beats[move]}</small></button>)}</div></>}
+        <div className="room-move-buttons">{moves.map(move => <button key={move} disabled={!open || !!pending} onClick={() => onMove(move)}><HandIcon move={move} wrap={youColor} /><strong>{move}</strong><small>Vence a {beats[move]}</small></button>)}</div></>}
   </>;
 }
 

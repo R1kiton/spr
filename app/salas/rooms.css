@@ -3,7 +3,7 @@
 .rooms-page button{transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .12s}
 .room-spinner{animation:room-spin 1s linear infinite}
 /* Counters must not wobble as digits change. */
-.room-time strong,.room-code,.tournament-game,.tournament-slot b,.room-ranking-player b,.room-history td small{font-variant-numeric:tabular-nums}
+.room-time strong,.room-code,.tournament-game,.tournament-slot b,.room-history td small{font-variant-numeric:tabular-nums}
 .room-time strong{min-width:2ch;text-align:center}
 @keyframes room-spin{to{transform:rotate(360deg)}}
 
@@ -106,9 +106,6 @@
 .room-camera-overlay button{padding:6px;background:var(--overlay-75);color:var(--ink);border-radius:3px}
 .room-camera-detected{position:absolute;bottom:10px;left:50%;display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--overlay-85);border:2px solid var(--gold);border-radius:3px;color:var(--ink);font-size:14px;font-weight:600;text-transform:capitalize;white-space:nowrap;transform:translate(-50%)}
 .room-camera-detected .move-object{font-size:28px;filter:drop-shadow(2px 2px 0 var(--shadow))}
-.room-camera-countdown{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:var(--overlay-50);color:var(--ink)}
-.room-camera-countdown strong{font:400 84px/1 var(--display);color:var(--gold);-webkit-text-stroke:9px var(--shadow);paint-order:stroke fill;text-shadow:6px 6px 0 var(--red)}
-.room-camera-countdown span{font-weight:700;text-shadow:2px 2px 0 var(--shadow)}
 .room-capture-toolbar{display:flex;flex-direction:column;align-items:flex-start;gap:14px}
 .room-capture-toolbar>span{display:flex;align-items:flex-start;gap:8px;max-width:420px;color:var(--muted);font-size:14px}
 .room-capture-toolbar>span svg{flex-shrink:0;margin-top:3px}
@@ -122,7 +119,7 @@
 .room-player-avatar{display:grid;place-items:center;flex-shrink:0;width:38px;height:38px;color:var(--shadow);border-radius:3px;font:400 18px var(--display);transform:skewX(-12deg)}
 .room-player>div{display:flex;flex-direction:column;min-width:0}
 .room-player strong{overflow:hidden;font:400 15px var(--display);white-space:nowrap;text-overflow:ellipsis}
-.room-player strong small,.room-ranking-player strong small{margin-left:4px;color:var(--gold);font:700 12px "Chakra Petch",sans-serif}
+.room-player strong small{margin-left:4px;color:var(--gold);font:700 12px "Chakra Petch",sans-serif}
 .room-player>div>span{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
 .room-player i{width:7px;height:7px;background:var(--dot-idle);border-radius:50%}
 .room-player i.online{background:var(--green)}
@@ -130,11 +127,8 @@
 .room-empty-slot{display:flex;justify-content:center;align-items:center;gap:8px;height:62px;border:2px dashed var(--rim);border-radius:4px;color:var(--muted);font-size:14px}
 .room-waiting-hint{display:flex;align-items:center;gap:8px;margin-top:16px;color:var(--muted);font-size:13px}
 .room-settings .room-fieldset:first-of-type{margin-top:6px}
-.room-setting-buttons{display:grid;gap:8px}
-.room-setting-buttons button{justify-content:space-between;padding:12px 14px;background:var(--shadow);border:2px solid var(--rim);border-radius:3px;color:var(--muted);font-size:14px;font-weight:700}
-.room-setting-buttons button[aria-pressed=true]{border-color:var(--gold);color:var(--ink)}
-.room-setting-buttons button:disabled,.room-round-options button:disabled{opacity:1;cursor:default}
-.room-setting-buttons button:disabled:not([aria-pressed=true]),.room-round-options button:disabled:not([aria-pressed=true]){opacity:.5}
+.room-round-options button:disabled{opacity:1;cursor:default}
+.room-round-options button:disabled:not([aria-pressed=true]){opacity:.5}
 .room-rules{margin-top:20px;padding:14px;background:var(--shadow);border:2px solid var(--gold-35);border-radius:3px}
 .room-rules strong{font:400 15px var(--display)}
 .room-rules p{margin:6px 0 0;color:var(--muted);font-size:14px}
@@ -151,7 +145,6 @@
 .room-time-urgent{border-color:var(--red)}
 .room-time-urgent strong,.room-time-urgent svg{color:var(--red-text)}
 .room-phase-badge{padding:8px 14px;background:var(--stage-hi);border:2px solid var(--rim);border-radius:3px;color:var(--ink);font-size:14px;font-weight:700;transform:skewX(-10deg)}
-.room-game-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}
 .room-move-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px 0}
 .room-move-buttons button{flex-direction:column;gap:6px;padding:18px 8px 14px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px;color:var(--ink);box-shadow:5px 5px 0 var(--shadow)}
 .room-move-buttons button:hover:not(:disabled){border-color:var(--gold);transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--shadow)}
@@ -159,43 +152,16 @@
 .room-move-buttons .hand{font-size:72px;filter:drop-shadow(3px 3px 0 var(--shadow))}
 .room-move-buttons strong{font:400 17px var(--display);text-transform:capitalize}
 .room-move-buttons small{color:var(--gold);font-size:13px;font-weight:700}
-.room-deadline-message{margin:12px 0 0;text-align:center;color:var(--gold);font-weight:700}
 .room-submitted{position:relative;display:flex;flex-direction:column;align-items:center;padding:16px 10px;text-align:center}
 .room-submitted-emoji{font-size:96px;line-height:0;filter:drop-shadow(4px 4px 0 var(--shadow))}
-.room-success-check{position:absolute;top:18px;left:calc(50% + 34px);display:grid;place-items:center;width:38px;height:38px;background:var(--green);color:var(--shadow);border:3px solid var(--shadow);border-radius:50%}
 .room-submitted h3{margin:14px 0 6px;font:400 22px var(--display)}
 .room-submitted p{margin:0;color:var(--muted);font-size:14px}
-.room-submitted-count{margin-top:14px;padding:6px 12px;background:var(--shadow);border:2px solid var(--rim);border-radius:3px;font-size:13px;font-weight:700}
-.room-round-result{display:flex;flex-direction:column;align-items:center;text-align:center}
 .room-result-icon{display:grid;place-items:center;width:62px;height:62px;background:var(--green);color:var(--shadow);border:3px solid var(--shadow);border-radius:4px;box-shadow:4px 4px 0 var(--shadow);transform:skewX(-10deg)}
 .room-result-final{background:var(--gold)}
-.room-round-result h2{margin:4px 0 6px;font:400 clamp(26px,3.6vw,36px)/1.15 var(--display);color:var(--gold);-webkit-text-stroke:6px var(--shadow);paint-order:stroke fill;text-shadow:4px 4px 0 var(--red)}
-.room-round-result>p{margin:0;color:var(--muted)}
-.room-revealed-moves{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;width:100%;margin:20px 0}
-.room-revealed-moves>div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 8px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px}
-.room-revealed-moves>div.is-me{border-color:var(--gold)}
-.room-revealed-moves>div>span{font-size:60px;line-height:1;filter:drop-shadow(3px 3px 0 var(--shadow))}
-.room-revealed-moves strong{max-width:100%;overflow:hidden;font:400 14px var(--display);white-space:nowrap;text-overflow:ellipsis}
-.room-revealed-moves small{display:block;color:var(--muted);font-size:13px}
-.room-revealed-moves small::first-letter{text-transform:uppercase}
-.room-revealed-moves b{color:var(--gold);font-size:14px}
 .rooms-page .room-result-next{min-width:260px}
 .room-host-wait{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}
 
 /* Scoreboard */
-.room-ranking{display:grid;gap:8px}
-.room-ranking-player{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px}
-.room-ranking-player.is-me{border-color:var(--gold)}
-.room-rank{display:grid;place-items:center;width:28px;color:var(--muted);font:400 15px var(--display)}
-.room-rank svg{color:var(--gold)}
-.room-ranking-player>div{display:flex;flex-direction:column;flex:1;min-width:0}
-.room-ranking-player strong{overflow:hidden;font:400 15px var(--display);white-space:nowrap;text-overflow:ellipsis}
-.room-ranking-player>div>span{color:var(--muted);font-size:13px}
-.room-ranking-player b{font:400 24px var(--display);color:var(--gold)}
-.room-ranking-player b small{color:var(--muted);font:700 12px "Chakra Petch",sans-serif}
-.room-score-rule{display:flex;gap:8px;margin-top:14px;color:var(--muted);font-size:13px}
-.room-score-rule svg{flex-shrink:0;margin-top:3px}
-.room-score-rule p{margin:0}
 
 /* History */
 .room-history{margin-top:18px}
@@ -211,7 +177,7 @@
   .room-entry-grid{grid-template-columns:1fr 1fr;gap:14px}
   .room-entry-card{padding:20px}
   .room-art-hands{font-size:58px}
-  .room-lobby-grid,.room-game-grid{grid-template-columns:1fr}
+  .room-lobby-grid{grid-template-columns:1fr}
   .room-camera-setup.is-active{grid-template-columns:240px 1fr}
 }
 @media (max-width:680px){
@@ -289,3 +255,16 @@
   .tournament-side strong{font-size:16px}
   .tournament-pips i{width:18px}
 }
+
+/* Duel: same arena as the solo mode (HUD + full-width stage + result over the stage). */
+.duel-arena{margin-bottom:18px}
+.hud-center.is-urgent{border-color:var(--red)}
+.hud-center.is-urgent small{color:var(--red-text);font-weight:700}
+.round-wait{background:radial-gradient(closest-side,var(--overlay-90),var(--overlay-75))}
+.round-wait h3{display:flex;align-items:center;gap:10px}
+.round-wait-rival{display:grid;place-items:center;width:1em;height:1em;font:400 .6em var(--display);color:var(--muted);border:3px dashed var(--rim);border-radius:6px}
+.duel-camera-error{margin:0;padding:0 18px 14px}
+/* Lobby / tournament camera: the held gesture fills the detection pill, like the arena. */
+.room-camera-detected{overflow:hidden;isolation:isolate}
+.room-camera-panel canvas{position:absolute;inset:0;display:none;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);pointer-events:none}
+.room-camera-active canvas{display:block}

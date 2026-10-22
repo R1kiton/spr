@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Camera, CameraOff, Check, CheckCheck, Clock3, Copy, Crown, Link2, LoaderCircle, LogOut, Plus, Radio, RotateCcw, ShieldCheck, Swords, Trophy, Users, X } from "lucide-react";
+import { ArrowRight, Camera, CameraOff, Check, Clock3, Copy, Crown, Link2, LoaderCircle, LogOut, Plus, Radio, ShieldCheck, Swords, Trophy, Users, X } from "lucide-react";
 import { moves, type Move } from "../../lib/game";
 import { capacityFor, type PublicRoom } from "../../lib/rooms";
 import { activeMatch, TOURNAMENT_MAX_PLAYERS, TOURNAMENT_MIN_PLAYERS } from "../../lib/tournament";
@@ -9,6 +9,7 @@ import { playResult, type ResultSound } from "../../lib/sounds";
 import { ArenaTopbar, ModeTabs } from "../arena-nav";
 import { HandIcon } from "../hand-icon";
 import { MoveIcon } from "../move-icon";
+import { DuelArena } from "./duel-arena";
 import { TournamentView } from "./tournament-view";
 import { useGestureCamera } from "./use-gesture-camera";
 import "../arena.css";
@@ -24,7 +25,6 @@ function playerColor(room: PublicRoom, id: string | null) {
   return id !== null && id === room.meId ? youColor : rivalColor;
 }
 const missingPlayers = (count: number) => count === 1 ? "Falta 1 jugador" : `Faltan ${count} jugadores`;
-const beats: Record<Move, Move> = { piedra: "tijera", papel: "piedra", tijera: "papel" };
 const ACTIVE_ROOM = "gesto-arena-room";
 const PLAYER_NAME = "gesto-arena-name";
 
@@ -178,9 +178,13 @@ export default function RoomsPage() {
     if (!current.deadline || serverNow >= current.deadline) return;
     void send({ type: "move", move, round: current.round, matchId: current.matchId }, "move");
   }, [send]);
-  const camera = useGestureCamera(submitMove);
-
   const myMatch = room?.tournament && room.meId ? activeMatch(room.tournament, room.meId) : null;
+  const deadline = room?.tournament ? myMatch?.deadline : room?.deadline;
+  const seconds = deadline ? Math.max(0, Math.ceil((deadline - now - offset.current) / 1000)) : 0;
+  const canPlay = !!room && room.phase === "playing" && !room.ownMove && seconds > 0
+    && (!room.tournament || (!!myMatch && (myMatch.startsAt === null || now + offset.current >= myMatch.startsAt)));
+  const camera = useGestureCamera(submitMove, canPlay);
+
   // Results sound as they happen. The first snapshot of a room (e.g. restored after a reload) only sets the baseline.
   const hasRoom = !!room;
   const result = room ? latestResult(room) : null;
@@ -190,9 +194,6 @@ export default function RoomsPage() {
     if (heardResult.current !== undefined && result && result.key !== heardResult.current) playResult(result.sound);
     heardResult.current = result?.key ?? null;
   }, [hasRoom, result?.key]);
-  useEffect(() => {
-    camera.cancelCapture();
-  }, [room?.round, room?.matchId, room?.phase, room?.ownMove, myMatch?.id, myMatch?.game, camera.cancelCapture]);
   useEffect(() => { if (!activeCode) camera.stop(); }, [activeCode, camera.stop]);
 
   function resetAccess() {
@@ -228,15 +229,6 @@ export default function RoomsPage() {
   const tournamentRoom = room?.mode === "tournament";
   const capacity = room ? capacityFor(room.mode) : 2;
   const canStart = !!room && room.players.length >= (tournamentRoom ? TOURNAMENT_MIN_PLAYERS : 2);
-  const deadline = room?.tournament ? myMatch?.deadline : room?.deadline;
-  const seconds = deadline ? Math.max(0, Math.ceil((deadline - now - offset.current) / 1000)) : 0;
-  const canPlay = room?.tournament ? !!myMatch && seconds > 0 && (myMatch.startsAt === null || now + offset.current >= myMatch.startsAt) : room?.phase === "playing";
-  const last = room?.history[room.history.length - 1];
-  const rankings = room ? [...room.players].sort((a, b) => b.score - a.score) : [];
-  const winningScore = rankings[0]?.score ?? 0;
-  const champions = rankings.filter(player => player.score === winningScore);
-  const finalTitle = champions.length === 1 ? `¡${champions[0].name} gana!` : "¡Empate en el duelo!";
-  const allSubmitted = room?.players.filter(player => player.submitted).length ?? 0;
 
   return <main className="fight rooms-page">
     <ArenaTopbar />
@@ -262,7 +254,7 @@ export default function RoomsPage() {
     </> : <>
       <section className="room-bar" aria-label="Información de la sala"><div><span className="room-status-dot" /><span className="room-bar-label">Sala</span><strong className="room-code">{room.code}</strong><button className="room-icon-button" onClick={() => copyInvitation(false)} aria-label="Copiar código de sala"><Copy size={16} /></button></div><div><button className="room-soft-button" onClick={() => copyInvitation(true)}><Link2 size={15} /> {room.mode === "tournament" ? "Invitar jugadores" : "Invitar a tu rival"}</button><button className="room-leave" disabled={!!pending} onClick={() => { camera.stop(); void send({ type: "leave" }); }}><LogOut size={15} /> Salir<span className="room-desktop-only"> de la sala</span></button></div></section>
 
-      <CameraPanel camera={camera} room={room} seconds={seconds} pending={!!pending} active={canPlay} />
+      {(room.phase === "lobby" || room.tournament) && <CameraPanel camera={camera} room={room} active={canPlay} />}
 
       {room.phase === "lobby" ? <div className="room-lobby-grid">
         <section className="room-card room-players-card"><div className="room-card-title"><h2><Users size={18} /> {tournamentRoom ? "Participantes" : "Los rivales"}</h2><span>{room.players.length} / {capacity} jugadores</span></div><p className="room-card-intro">{tournamentRoom ? room.players.length < TOURNAMENT_MIN_PLAYERS ? `Comparte el código. ${missingPlayers(TOURNAMENT_MIN_PLAYERS - room.players.length)} para poder empezar.` : "Ya pueden empezar, o esperar a más gente." : room.players.length < capacity ? "Comparte el código con tu rival para empezar el duelo." : "Los dos están listos. Que empiece el duelo."}</p>
@@ -270,16 +262,8 @@ export default function RoomsPage() {
           <div className="room-waiting-hint"><span className="room-status-dot" /> La sala se actualiza automáticamente.</div>
         </section>
         <aside className="room-card room-settings"><div className="room-card-title"><h2>La partida</h2><span>{host ? <><Crown size={12} /> Tú organizas</> : "Configura el anfitrión"}</span></div>{!tournamentRoom && <fieldset className="room-fieldset"><legend>Duración de la partida</legend><div className="room-round-options">{([3, 5] as const).map(value => <button key={value} disabled={!host || !!pending} aria-pressed={room.roundLimit === value} onClick={() => send({ type: "settings", mode: "solo", roundLimit: value })}>{value} rondas</button>)}</div></fieldset>}<div className="room-rules">{tournamentRoom ? <><strong>Eliminación directa, al mejor de 3.</strong><p>El bracket se sortea al empezar; si no son 4, 8 o 16, algunos pasan directo a la siguiente ronda. Gana el enfrentamiento quien gane 2 juegos; los empates se repiten. Cada juego dura 20 segundos y los enfrentamientos de una ronda se juegan a la vez.</p></> : <><strong>Una jugada, un rival.</strong><p>Ganas 1 punto por cada ronda que le ganas a tu rival. Los empates también cuentan como ronda. Tienes 20 segundos para elegir; si no juegas y tu rival sí, la ronda es suya.</p></>}</div><button className="primary room-start" disabled={!host || !canStart || !!pending} onClick={() => send({ type: "start" })}><span>{pending === "start" ? <LoaderCircle size={17} className="room-spinner" /> : tournamentRoom ? "¡Que empiece el torneo!" : "¡Que empiece la partida!"}</span></button><p className="room-start-hint">{!host ? "El anfitrión dará inicio cuando estén listos." : tournamentRoom ? room.players.length < TOURNAMENT_MIN_PLAYERS ? `Necesitan al menos ${TOURNAMENT_MIN_PLAYERS} jugadores.` : `Se sortea un bracket para ${room.players.length} jugadores.` : room.players.length < 2 ? "Invita a tu rival para empezar." : "Los dos entrarán a la vez."}</p></aside>
-      </div> : room.tournament ? <TournamentView room={room} now={now + offset.current} host={host} pending={pending} captureBusy={camera.countdown !== null} onMove={submitMove} onRematch={() => void send({ type: "rematch" })} /> : <>
-        <section className="room-match-heading"><h2>{room.phase === "finished" ? "La arena ya decidió." : `Ronda ${room.round} de ${room.roundLimit}`}</h2>{room.phase === "playing" ? <div className={`room-time ${seconds <= 5 ? "room-time-urgent" : ""}`} role="timer" aria-label={`${seconds} segundos restantes`}><Clock3 size={18} /><strong>{seconds.toString().padStart(2, "0")}</strong><span>segundos</span></div> : <span className="room-phase-badge">{room.phase === "finished" ? "Partida terminada" : "Ronda terminada"}</span>}</section>
-        <div className="room-game-grid">
-          <section className="room-card room-play-card">
-            {room.phase === "playing" ? <><div className="room-card-title"><h2>{room.ownMove ? "Tu jugada está guardada" : "Tu mano decide."}</h2><span><ShieldCheck size={12} /> Jugadas secretas</span></div>{room.ownMove ? <div className="room-submitted" role="status"><span className="room-submitted-emoji"><MoveIcon move={room.ownMove} accent={playerColor(room, room.meId)} /></span><span className="room-success-check"><CheckCheck size={23} /></span><h3>Ya elegiste {room.ownMove}.</h3><p>Tu jugada queda oculta hasta que todos elijan<br className="room-desktop-only" /> o se termine el tiempo.</p><span className="room-submitted-count">{allSubmitted} de {room.players.length} jugadores listos</span></div> : <><p className="room-card-intro">Elige un gesto. Se confirma al tocarlo y ya no puedes cambiarlo.</p><div className="room-move-buttons">{moves.map(move => <button key={move} disabled={!!pending || seconds === 0 || camera.countdown !== null} onClick={() => submitMove(move)}><HandIcon move={move} wrap={playerColor(room, room.meId)} /><strong>{move}</strong><small>Vence a {beats[move]}</small></button>)}</div>{seconds === 0 && <p className="room-deadline-message" role="status">Tiempo terminado. Revelando las jugadas…</p>}</>}
-
-            </> : <div className="room-round-result"><span className={`room-result-icon ${room.phase === "finished" ? "room-result-final" : ""}`}>{room.phase === "finished" ? <Trophy size={36} /> : <CheckCheck size={31} />}</span><h2>{room.phase === "finished" ? finalTitle : last && last.winners.length === 1 ? `¡${room.players.find(player => player.id === last.winners[0])?.name || "Un jugador"} se lleva la ronda!` : "¡Empate!"}</h2><p>{room.phase === "finished" ? `${room.roundLimit} rondas jugadas. La próxima partida la escriben ustedes.` : `Ronda ${last?.number || room.round}: todas las manos, sobre la mesa.`}</p>{last && <div className="room-revealed-moves">{room.players.map(player => <div key={player.id} className={player.id === room.meId ? "is-me" : ""}><span>{last.moves[player.id] ? <MoveIcon move={last.moves[player.id]!} accent={playerColor(room, player.id)} /> : "—"}</span><strong>{player.name}{player.id === room.meId ? " (tú)" : ""}</strong><small>{last.moves[player.id] || "Sin jugada"}</small><b>+{last.points[player.id] || 0} pts</b></div>)}</div>}{host ? <button className="primary room-result-next" disabled={!!pending} onClick={() => send({ type: room.phase === "finished" ? "rematch" : "next" })}><span>{room.phase === "finished" ? <><RotateCcw size={17} /> Preparar la revancha</> : "Siguiente ronda"}</span></button> : <span className="room-host-wait"><LoaderCircle className="room-spinner" size={14} />{room.phase === "finished" ? "El anfitrión puede preparar otra partida." : "El anfitrión iniciará la siguiente ronda."}</span>}</div>}
-          </section>
-          <aside className="room-card room-score-card"><div className="room-card-title"><h2><Trophy size={17} /> Marcador</h2><span>{room.phase === "finished" ? "Final" : `${room.history.length} de ${room.roundLimit} rondas`}</span></div><div className="room-ranking">{rankings.map((player, index) => <div key={player.id} className={`room-ranking-player ${player.id === room.meId ? "is-me" : ""}`}><span className="room-rank">{index === 0 && player.score > 0 ? <Crown size={16} /> : String(index + 1).padStart(2, "0")}</span><div><strong>{player.name}{player.id === room.meId && <small> tú</small>}</strong><span>{room.phase === "playing" ? player.submitted ? "Jugada lista" : player.online ? "Eligiendo…" : "Sin conexión" : player.online ? "En la sala" : "Sin conexión"}</span></div><b>{player.score}<small> pts</small></b></div>)}</div><div className="room-score-rule"><ShieldCheck size={15} /><p>1 punto por cada ronda ganada. Gana quien sume más puntos al terminar todas las rondas.</p></div></aside>
-        </div>
+      </div> : room.tournament ? <TournamentView room={room} now={now + offset.current} host={host} pending={pending} onMove={submitMove} onRematch={() => void send({ type: "rematch" })} /> : <>
+        <DuelArena room={room} camera={camera} now={now + offset.current} seconds={seconds} canPlay={canPlay} host={host} pending={pending} onMove={submitMove} onRematch={() => void send({ type: "rematch" })} />
         {room.history.length > 0 && <section className="room-card room-history"><div className="room-card-title"><h2>Así va la partida</h2><span>El detalle de cada ronda</span></div><div className="room-history-scroll"><table><thead><tr><th scope="col">Ronda</th>{room.players.map(player => <th key={player.id} scope="col">{player.name}{player.id === room.meId ? " (tú)" : ""}</th>)}</tr></thead><tbody>{room.history.map(round => <tr key={round.number}><th scope="row">{String(round.number).padStart(2, "0")}</th>{room.players.map(player => <td key={player.id}><span aria-label={round.moves[player.id] || "Sin jugada"}>{round.moves[player.id] ? <MoveIcon move={round.moves[player.id]!} accent={playerColor(room, player.id)} /> : "—"}</span><small>+{round.points[player.id] || 0}</small></td>)}</tr>)}</tbody></table></div></section>}
       </>}
     </>}
@@ -291,19 +275,19 @@ function Player({ player, room }: { player: PublicRoom["players"][number]; room:
   return <div className={`room-player ${player.id === room.meId ? "is-me" : ""}`}><span className="room-player-avatar" style={{ background: playerColor(room, player.id) }}>{player.name.slice(0, 1).toLocaleUpperCase("es")}</span><div><strong>{player.name}{player.id === room.meId && <small> tú</small>}</strong><span><i className={player.online ? "online" : ""} />{player.online ? "En la sala" : "Sin conexión"}</span></div>{player.id === room.hostId && <span className="room-host-label" title="Anfitrión"><Crown size={14} /><span>Anfitrión</span></span>}</div>;
 }
 
-function CameraPanel({ camera, room, seconds, pending, active }: { camera: ReturnType<typeof useGestureCamera>; room: PublicRoom; seconds: number; pending: boolean; active: boolean }) {
+function CameraPanel({ camera, room, active }: { camera: ReturnType<typeof useGestureCamera>; room: PublicRoom; active: boolean }) {
   // Whether the viewer can submit a move right now (a duel round or their own tournament game).
   const playing = active;
   return <section className={`room-camera-setup ${camera.status === "on" ? "is-active" : ""}`} aria-label="Cámara opcional">
     <div className={`room-camera-panel ${camera.status === "on" ? "room-camera-active" : ""}`}>
       <video ref={camera.videoRef} autoPlay muted playsInline aria-label="Vista local de tu cámara" />
+      <canvas ref={camera.canvasRef} width={640} height={480} aria-hidden="true" />
       {camera.status === "on" ? <>
         <div className="room-camera-overlay"><span><span className="room-status-dot" /> Solo en tu dispositivo</span><button onClick={camera.stop} aria-label="Desactivar cámara"><CameraOff size={16} /></button></div>
-        <div className="room-camera-detected">{camera.detected ? <><MoveIcon move={camera.detected} accent={playerColor(room, room.meId)} />{camera.detected}</> : "Muestra una mano frente a la cámara"}</div>
-        {camera.countdown !== null && <div className="room-camera-countdown" role="status"><strong>{camera.countdown}</strong><span>Mantén tu gesto</span></div>}
+        <div className="room-camera-detected">{camera.detected ? <><MoveIcon move={camera.detected} accent={playerColor(room, room.meId)} />{camera.detected}</> : "Muestra una mano frente a la cámara"}<i className="hold-fill" style={{ transform: `scaleX(${camera.holdState.progress})` }} /></div>
       </> : <div className="room-camera-off"><div><Camera size={19} /><span><strong>¿Prefieres jugar con la mano?</strong><small>Prepara tu cámara desde ahora. Tu video se queda en tu dispositivo.</small></span></div><button className="room-soft-button" onClick={camera.start} disabled={camera.status === "loading"}>{camera.status === "loading" ? <><LoaderCircle className="room-spinner" size={15} /> Cargando…</> : "Activar cámara"}</button></div>}
     </div>
-    {camera.status === "on" && <div className="room-capture-toolbar"><span><ShieldCheck size={12} />{!playing ? "Cámara lista. Puedes practicar; tu gesto no se envía hasta que lo confirmes en una ronda." : room.ownMove ? "Tu jugada ya está guardada. Espera la revelación." : "Puño es piedra, palma es papel y V es tijera. Confirma tu gesto antes de que termine la ronda."}</span>{playing && !room.ownMove && <button className="primary" onClick={camera.capture} disabled={pending || camera.countdown !== null || seconds < 4}><span><Camera size={16} />{camera.countdown ? "Capturando…" : "Capturar en 3 segundos"}</span></button>}</div>}
+    {camera.status === "on" && <div className="room-capture-toolbar"><span><ShieldCheck size={12} />{room.ownMove ? "Tu jugada ya está guardada. Espera la revelación." : !playing ? "Cámara lista. Cuando empiece tu juego, mantén un gesto 2 segundos para elegir." : camera.holdState.spent ? "Baja la mano o cambia de gesto para el siguiente juego." : "Mantén un gesto 2 segundos para elegir: puño es piedra, palma es papel y V es tijera."}</span></div>}
     {camera.error && <p className="room-camera-error" role="alert">{camera.error}</p>}
   </section>;
 }

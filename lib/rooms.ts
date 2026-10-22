@@ -41,6 +41,8 @@ export interface StoredRoom {
   createdAt: number;
   updatedAt: number;
   matchId: string;
+  /** When a resolved duel round automatically opens the next one; null while playing or when finished. */
+  nextAt?: number | null;
   /** Bracket state while a tournament is running; absent in duels and in rooms stored before tournaments. */
   tournament?: Tournament | null;
 }
@@ -73,6 +75,8 @@ export type PublicRoom = Omit<StoredRoom, "players" | "tournament"> & {
 export const MAX_PLAYERS = 2;
 export const capacityFor = (mode: RoomMode) => mode === "tournament" ? TOURNAMENT_MAX_PLAYERS : mode === "teams" ? 4 : MAX_PLAYERS;
 export const ROUND_DURATION_MS = 20_000;
+/** Pause after a duel round so both players see the result before the next round opens on its own. */
+export const ROUND_RESULT_MS = 5_000;
 export const ONLINE_DURATION_MS = 30_000;
 export const STALE_DURATION_MS = 60_000;
 
@@ -136,6 +140,7 @@ function resetMatch(room: StoredRoom) {
   room.phase = "lobby";
   room.round = 0;
   room.deadline = null;
+  room.nextAt = null;
   room.moves = {};
   room.history = [];
   room.matchId = crypto.randomUUID();
@@ -151,7 +156,7 @@ function refreshScores(room: StoredRoom) {
   }
 }
 
-function resolveRound(room: StoredRoom) {
+function resolveRound(room: StoredRoom, now: number) {
   const round: RoomRound = {
     number: room.round,
     moves: Object.fromEntries(room.players.map((player) => [player.id, room.moves[player.id] ?? null])),
@@ -191,6 +196,7 @@ function resolveRound(room: StoredRoom) {
   room.history.push(round);
   room.deadline = null;
   room.phase = room.round >= room.roundLimit ? "finished" : "between";
+  room.nextAt = room.phase === "between" ? now + ROUND_RESULT_MS : null;
   refreshScores(room);
 }
 
@@ -198,6 +204,7 @@ function openRound(room: StoredRoom, number: number, now: number) {
   room.round = number;
   room.moves = {};
   room.deadline = now + ROUND_DURATION_MS;
+  room.nextAt = null;
   room.phase = "playing";
 }
 
@@ -253,7 +260,11 @@ export function settleRoom(room: StoredRoom, now: number): StoredRoom {
     if (settleTournament(next.tournament, now)) next.phase = "finished";
     changed ||= before !== JSON.stringify(next.tournament);
   } else if (next.phase === "playing" && next.deadline !== null && now >= next.deadline) {
-    resolveRound(next);
+    resolveRound(next, now);
+    changed = true;
+  }
+  if (next.phase === "between" && next.nextAt && now >= next.nextAt) {
+    openRound(next, next.round + 1, now);
     changed = true;
   }
   refreshScores(next);
@@ -333,7 +344,7 @@ export function applyRoomAction(room: StoredRoom, playerId: string, action: Room
       const previous = next.moves[playerId];
       if (previous && previous !== action.move) throw new Error("Ya elegiste tu jugada para esta ronda.");
       next.moves[playerId] = action.move;
-      if (next.players.every((member) => Boolean(next.moves[member.id]))) resolveRound(next);
+      if (next.players.every((member) => Boolean(next.moves[member.id]))) resolveRound(next, now);
       break;
     }
     case "next":
