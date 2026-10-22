@@ -1,7 +1,6 @@
 export const moves = ["piedra", "papel", "tijera"] as const;
 export type Move = typeof moves[number];
 export type Outcome = "win" | "lose" | "draw";
-export const icons: Record<Move, string> = { piedra: "✊", papel: "✋", tijera: "✌️" };
 
 export function outcome(player: Move, computer: Move): Outcome {
   if (player === computer) return "draw";
