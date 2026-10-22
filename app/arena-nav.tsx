@@ -1,8 +1,24 @@
-import type { ReactNode } from "react";
-import { Cpu, Swords, Users } from "lucide-react";
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
+import { Cpu, Swords, Users, Volume2, VolumeX } from "lucide-react";
+import { playResult, setSoundEnabled, soundEnabled } from "../lib/sounds";
 
 export function ArenaTopbar({ children }: { children?: ReactNode }) {
-  return <header className="topbar"><a href="/" className="brand"><span className="brand-icon"><Swords size={21} /></span>Gesto Arena</a>{children && <nav className="top-actions">{children}</nav>}</header>;
+  return <header className="topbar"><a href="/" className="brand"><span className="brand-icon"><Swords size={21} /></span>Gesto Arena</a><nav className="top-actions"><SoundToggle />{children}</nav></header>;
+}
+
+/** Mutes the round-result sounds; the choice is remembered in this browser. */
+function SoundToggle() {
+  const [on, setOn] = useState(true);
+  useEffect(() => setOn(soundEnabled()), []);
+  function toggle() {
+    setSoundEnabled(!on);
+    setOn(!on);
+    // A short preview confirms sound is back on (and unlocks audio with this click).
+    if (!on) playResult("draw");
+  }
+  return <button className="help-button" aria-pressed={on} onClick={toggle}>{on ? <Volume2 size={17} /> : <VolumeX size={17} />}<span className="top-label">{on ? "Sonido" : "Sin sonido"}</span></button>;
 }
 
 const tabs = [

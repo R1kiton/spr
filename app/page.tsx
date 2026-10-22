@@ -6,16 +6,17 @@ import "./arena.css";
 import type { GestureRecognizer } from "@mediapipe/tasks-vision";
 import { gestureMove, moves, outcome, randomMove, type Move, type Outcome } from "../lib/game";
 import { HOLD_MS, idleHold, stepHold } from "../lib/hold";
+import { playResult } from "../lib/sounds";
 import { ArenaTopbar, ModeTabs } from "./arena-nav";
 import { HandIcon } from "./hand-icon";
 import { MoveIcon } from "./move-icon";
 
 type Round = { player: Move; computer: Move; result: Outcome; id: number };
 const resultText = { win: "¡Esta ronda es tuya!", lose: "La compu gana esta vez", draw: "¡Mentes sincronizadas!" };
-const callouts = { win: "K.O.", lose: "Derrota", draw: "Doble K.O." };
+const callouts = { win: "K.O.", lose: "Derrota", draw: "Empate" };
 const beats: Record<Move, Move> = { piedra: "tijera", papel: "piedra", tijera: "papel" };
 /** How long the round result stays over the stage unless the player dismisses it. */
-const RESULT_MS = 5000;
+const RESULT_MS = 3000;
 
 export default function Home() {
   const video = useRef<HTMLVideoElement>(null);
@@ -65,8 +66,11 @@ export default function Home() {
     return () => { document.removeEventListener("visibilitychange", hide); stopCamera(); };
   }, []);
 
-  // Every new round opens the result over the stage; resetting the match clears it.
-  useEffect(() => { setShown(last ? last.id : null); }, [last?.id]);
+  // Every new round opens the result over the stage with its sound; resetting the match clears it.
+  useEffect(() => {
+    setShown(last ? last.id : null);
+    if (last) playResult(last.result);
+  }, [last?.id]);
 
   useEffect(() => {
     if (shown === null) return;

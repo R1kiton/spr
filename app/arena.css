@@ -209,6 +209,7 @@
   .fight .history{padding:16px}
   .manual-options button{min-width:84px}
 }
+@media (max-width:480px){.top-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
 @media (max-width:400px){
   .top-actions a{display:none}
   .nameplate .avatar{display:none}

@@ -5,6 +5,7 @@ import { ArrowRight, Camera, CameraOff, Check, CheckCheck, Clock3, Copy, Crown, 
 import { moves, type Move } from "../../lib/game";
 import { capacityFor, type PublicRoom } from "../../lib/rooms";
 import { activeMatch, TOURNAMENT_MAX_PLAYERS, TOURNAMENT_MIN_PLAYERS } from "../../lib/tournament";
+import { playResult, type ResultSound } from "../../lib/sounds";
 import { ArenaTopbar, ModeTabs } from "../arena-nav";
 import { HandIcon } from "../hand-icon";
 import { MoveIcon } from "../move-icon";
@@ -26,6 +27,21 @@ const missingPlayers = (count: number) => count === 1 ? "Falta 1 jugador" : `Fal
 const beats: Record<Move, Move> = { piedra: "tijera", papel: "piedra", tijera: "papel" };
 const ACTIVE_ROOM = "gesto-arena-room";
 const PLAYER_NAME = "gesto-arena-name";
+
+/** The latest result the viewer took part in (a duel round or a game of their tournament match), keyed so it sounds once. */
+function latestResult(room: PublicRoom): { key: string; sound: ResultSound } | null {
+  const me = room.meId;
+  if (!me) return null;
+  const outcomeFor = (winner: string | null): ResultSound => winner === me ? "win" : winner === null ? "draw" : "lose";
+  if (room.tournament) {
+    // Rounds are stored in bracket order, so the last match of mine with games is the newest.
+    const match = room.tournament.rounds.flat().filter(item => (item.a === me || item.b === me) && item.games.length > 0).at(-1);
+    return match ? { key: `${room.matchId}:${match.id}:${match.games.length}`, sound: outcomeFor(match.games.at(-1)!.winner) } : null;
+  }
+  const round = room.history.at(-1);
+  if (!round) return null;
+  return { key: `${room.matchId}:${round.number}`, sound: round.winners.includes(me) ? "win" : round.winners.length === 0 ? "draw" : "lose" };
+}
 
 class RoomRequestError extends Error {
   constructor(message: string, readonly status: number) { super(message); }
@@ -165,6 +181,15 @@ export default function RoomsPage() {
   const camera = useGestureCamera(submitMove);
 
   const myMatch = room?.tournament && room.meId ? activeMatch(room.tournament, room.meId) : null;
+  // Results sound as they happen. The first snapshot of a room (e.g. restored after a reload) only sets the baseline.
+  const hasRoom = !!room;
+  const result = room ? latestResult(room) : null;
+  const heardResult = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!hasRoom) { heardResult.current = undefined; return; }
+    if (heardResult.current !== undefined && result && result.key !== heardResult.current) playResult(result.sound);
+    heardResult.current = result?.key ?? null;
+  }, [hasRoom, result?.key]);
   useEffect(() => {
     camera.cancelCapture();
   }, [room?.round, room?.matchId, room?.phase, room?.ownMove, myMatch?.id, myMatch?.game, camera.cancelCapture]);
