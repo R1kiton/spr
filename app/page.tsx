@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Camera, CameraOff, Check, CircleHelp, Cpu, Hand, Keyboard, RotateCcw, ScanLine, ShieldCheck, Swords, Trophy, X, Zap } from "lucide-react";
+import { Camera, CameraOff, Check, CircleHelp, Cpu, Hand, Keyboard, RotateCcw, ScanLine, ShieldCheck, Swords, Trophy, X, Zap } from "lucide-react";
 import "./arena.css";
 import type { GestureRecognizer } from "@mediapipe/tasks-vision";
 import { gestureMove, moves, outcome, randomMove, type Move, type Outcome } from "../lib/game";
@@ -14,6 +14,8 @@ type Round = { player: Move; computer: Move; result: Outcome; id: number };
 const resultText = { win: "¡Esta ronda es tuya!", lose: "La compu gana esta vez", draw: "¡Mentes sincronizadas!" };
 const callouts = { win: "K.O.", lose: "Derrota", draw: "Doble K.O." };
 const beats: Record<Move, Move> = { piedra: "tijera", papel: "piedra", tijera: "papel" };
+/** How long the round result stays over the stage unless the player dismisses it. */
+const RESULT_MS = 5000;
 
 export default function Home() {
   const video = useRef<HTMLVideoElement>(null);
@@ -32,7 +34,12 @@ export default function Home() {
   const [error, setError] = useState("");
   const [rounds, setRounds] = useState<Round[]>([]);
   const [help, setHelp] = useState(false);
+  // Id of the round whose result covers the stage; null when the stage is free to play.
+  const [shown, setShown] = useState<number | null>(null);
+  const resultOpen = useRef(false);
+  resultOpen.current = shown !== null;
   const last = rounds[0];
+  const shownRound = rounds.find(round => round.id === shown);
   const wins = rounds.filter(r => r.result === "win").length;
   const losses = rounds.filter(r => r.result === "lose").length;
   const draws = rounds.length - wins - losses;
@@ -57,6 +64,17 @@ export default function Home() {
     document.addEventListener("visibilitychange", hide);
     return () => { document.removeEventListener("visibilitychange", hide); stopCamera(); };
   }, []);
+
+  // Every new round opens the result over the stage; resetting the match clears it.
+  useEffect(() => { setShown(last ? last.id : null); }, [last?.id]);
+
+  useEffect(() => {
+    if (shown === null) return;
+    const timeout = setTimeout(() => setShown(null), RESULT_MS);
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setShown(null); };
+    document.addEventListener("keydown", close);
+    return () => { clearTimeout(timeout); document.removeEventListener("keydown", close); };
+  }, [shown]);
 
   useEffect(() => {
     if (!help) return;
@@ -100,6 +118,10 @@ export default function Home() {
       if (token !== generation.current) return;
       setCamera("on");
       cpuPick.current = randomMove();
+      // Canvas can't read CSS variables, so take the resolved token colors once.
+      const tokens = getComputedStyle(element);
+      const handInk = tokens.getPropertyValue("--you").trim();
+      const jointInk = tokens.getPropertyValue("--gold").trim();
       let previousTime = -1;
       let previousFrame = 0;
       const loop = (now: number) => {
@@ -111,7 +133,9 @@ export default function Home() {
             const category = result.gestures[0]?.[0];
             const move = category ? gestureMove(category.categoryName, category.score) : null;
             setDetected(move);
-            const step = stepHold(hold.current, move, now);
+            // While the result covers the stage nothing fires; the hold restarts once it closes.
+            if (resultOpen.current) hold.current = { ...hold.current, since: now, seen: now };
+            const step = resultOpen.current ? { hold: hold.current, progress: 0, fire: null } : stepHold(hold.current, move, now);
             hold.current = step.hold;
             const progress = Math.round(step.progress * 100) / 100, spent = step.hold.spent;
             setHoldState(old => old.progress === progress && old.spent === spent ? old : { progress, spent });
@@ -120,12 +144,12 @@ export default function Home() {
             if (ctx) {
               ctx.clearRect(0, 0, 640, 480);
               for (const points of result.landmarks) {
-                ctx.strokeStyle = "#2d8cff"; ctx.lineWidth = 3;
+                ctx.strokeStyle = handInk; ctx.lineWidth = 3;
                 for (const connection of GestureRecognizer.HAND_CONNECTIONS) {
                   ctx.beginPath(); ctx.moveTo(points[connection.start].x * 640, points[connection.start].y * 480);
                   ctx.lineTo(points[connection.end].x * 640, points[connection.end].y * 480); ctx.stroke();
                 }
-                ctx.fillStyle = "#ffcf2e";
+                ctx.fillStyle = jointInk;
                 points.forEach(p => { ctx.beginPath(); ctx.arc(p.x * 640, p.y * 480, 3, 0, Math.PI * 2); ctx.fill(); });
               }
             }
@@ -155,8 +179,7 @@ export default function Home() {
 
   return <main className="fight">
     <ArenaTopbar><button className="help-button" onClick={() => setHelp(true)}><CircleHelp size={17} /> Cómo jugar</button></ArenaTopbar>
-    <section className="intro"><h1>Piedra, papel<br />o tijera</h1><p>Tu mano es el control. La computadora ya eligió su golpe.</p></section>
-    <ModeTabs current="cpu" />
+    <section className="intro"><div className="intro-title"><h1>Piedra, papel<br />o tijera</h1><p>Tu mano es el control. La computadora ya eligió su golpe.</p></div><ModeTabs current="cpu" /></section>
     <section className="arena" aria-label="Zona de juego">
       <div className="hud" aria-label="Marcador">
         <div className="fighter p1"><div className="nameplate"><span className="avatar"><Hand size={19} /></span><strong>Tú</strong><b aria-label={`${wins} victorias`}>{wins.toString().padStart(2, "0")}</b></div><div className="bar" role="meter" aria-label="Tu vida" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p1Health}><i style={{ width: `${p1Health}%` }} /></div></div>
@@ -164,20 +187,22 @@ export default function Home() {
         <div className="fighter p2"><div className="nameplate"><span className="avatar"><Cpu size={19} /></span><strong>Computadora</strong><b aria-label={`${losses} victorias`}>{losses.toString().padStart(2, "0")}</b></div><div className="bar" role="meter" aria-label="Vida de la computadora" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p2Health}><i style={{ width: `${p2Health}%` }} /></div></div>
       </div>
       <div className="play-area"><div className="panel-heading"><span><span className={camera === "on" ? "dot live" : "dot"} /> {manual ? "Modo manual" : "Tu cámara"}</span><span className="small-muted">{manual ? "Sin cámara" : camera === "on" ? "En vivo" : "Esperando conexión"}</span></div>
-        <div className={`camera-stage ${camera === "on" ? "active" : ""}`}>
+        <div className={`camera-stage ${camera === "on" ? "active" : ""} ${shownRound ? "has-result" : ""}`}>
           <video ref={video} autoPlay playsInline muted aria-label="Vista de tu cámara" />
           <canvas ref={canvas} width={640} height={480} aria-hidden="true" />
           {camera !== "on" && <div className="camera-placeholder"><div className="placeholder-hands" aria-hidden="true"><HandIcon move="piedra" /><span className="vs-mark">VS</span><HandIcon move="tijera" side="p2" /></div><h2>{manual ? "Elige tu golpe" : camera === "loading" ? "Preparando tu cámara…" : "Entra a la arena"}</h2><p>{manual ? "Toca un gesto para jugar una ronda." : camera === "loading" ? "Cargando el reconocimiento de gestos." : "Activa tu cámara y deja que tu mano pelee."}</p>{!manual && <button className="primary" disabled={camera === "loading"} onClick={startCamera}><span><Camera size={18} />{camera === "loading" ? "Cargando…" : "Activar cámara"}</span></button>}{!manual && <span className="privacy"><ShieldCheck size={14} /> Tu video no sale de tu dispositivo</span>}{manual && <div className="manual-options">{moves.map(move => <button key={move} onClick={() => { const computer = randomMove(); saveRound(move, computer); }}><HandIcon move={move} />{move}</button>)}</div>}</div>}
           {camera === "on" && <><div className="view-corners" /><span className="live-label"><span className="dot live" /> En vivo</span><div className="detection"><ScanLine size={17} />{detected ? <><MoveIcon move={detected} />{holdState.spent ? "Baja la mano para otra ronda" : detected}</> : "Muestra tu mano"}{detected && <Check size={16} />}<i className="hold-fill" style={{ transform: `scaleX(${holdState.progress})` }} /></div></>}
-          {last && <div className={`callout ${last.result}`} key={last.id} aria-hidden="true">{callouts[last.result]}</div>}
+          {shownRound && <div className={`round-result ${shownRound.result}`} key={shownRound.id} role="status" aria-live="polite">
+            <strong className="round-result-callout">{callouts[shownRound.result]}</strong>
+            <div className="result-gestures"><span><MoveIcon move={shownRound.player} label={`Tú: ${shownRound.player}`} /></span><span className="versus">VS</span><span><MoveIcon move={shownRound.computer} side="p2" label={`Compu: ${shownRound.computer}`} /></span></div>
+            <h3>{resultText[shownRound.result]}</h3>
+            <p>Tú: {shownRound.player}, compu: {shownRound.computer}</p>
+            <button className="primary" onClick={() => setShown(null)}><span>Continuar</span></button>
+            <i className="round-result-timer" style={{ animationDuration: `${RESULT_MS}ms` }} aria-hidden="true" />
+          </div>}
         </div>
-        <div className="camera-toolbar"><span><ShieldCheck size={15} /> Procesamiento 100% local</span>{camera !== "off" ? <button onClick={stopCamera}><CameraOff size={15} /> Desactivar</button> : <button onClick={() => { setManual(!manual); setError(""); }}><Keyboard size={15} />{manual ? "Usar cámara" : "Probar sin cámara"}</button>}</div>
+        <div className="camera-toolbar"><span>{camera === "on" ? <Zap size={15} /> : <ShieldCheck size={15} />}{manual ? "Elige un gesto en el escenario" : camera !== "on" ? "Procesamiento 100% local" : holdState.spent ? "Baja la mano o cambia de gesto para la siguiente ronda" : `Mantén un gesto ${HOLD_MS / 1000} segundos y la ronda se juega sola`}</span><div className="camera-actions"><button className="reset" disabled={!rounds.length} onClick={() => { setRounds([]); setError(""); }}><RotateCcw size={14} /> Reiniciar combate</button>{camera !== "off" ? <button onClick={stopCamera}><CameraOff size={15} /> Desactivar</button> : <button onClick={() => { setManual(!manual); setError(""); }}><Keyboard size={15} />{manual ? "Usar cámara" : "Probar sin cámara"}</button>}</div></div>
       </div>
-      <aside className="match-panel"><div className="panel-heading"><span>Último golpe</span></div>
-        <div className={`result-card ${last ? last.result : ""}`} aria-live="polite"><div className="result-gestures"><span>{last ? <MoveIcon move={last.player} label={last.player} /> : <HandIcon move="piedra" />}</span><span className="versus">VS</span><span>{last ? <MoveIcon move={last.computer} side="p2" label={last.computer} /> : <span className="cpu-badge"><Bot /></span>}</span></div><h3>{last ? resultText[last.result] : "¿Listo para la primera?"}</h3><p>{last ? `Tú: ${last.player}, compu: ${last.computer}` : "La suerte ayuda. Tu mano decide."}</p></div>
-        <div className="hold-meter"><div className="hold-track" role="progressbar" aria-label="Progreso para lanzar la ronda" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(holdState.progress * 100)}><i style={{ width: `${holdState.progress * 100}%` }} /><span>{detected && holdState.progress > 0 ? <MoveIcon move={detected} /> : <Zap size={17} />}{holdState.progress > 0 && detected ? `Mantén ${detected}…` : holdState.spent ? "¡Golpe lanzado!" : "Mantén tu gesto"}</span></div><p className="play-hint">{manual ? "Elige un gesto en el escenario" : camera !== "on" ? "Activa la cámara para empezar" : holdState.spent ? "Baja la mano o cambia de gesto para la siguiente ronda" : `Mantén un gesto ${HOLD_MS / 1000} segundos y la ronda se juega sola`}</p></div>
-        <button className="reset" disabled={!rounds.length} onClick={() => { setRounds([]); setError(""); }}><RotateCcw size={14} /> Reiniciar combate</button>
-      </aside>
     </section>
     {error && <div className="error" role="alert"><CircleHelp size={18} /><span>{error}</span><button aria-label="Cerrar aviso" onClick={() => setError("")}><X size={17} /></button></div>}
     <section className="guide"><div className="guide-title"><h2>Lista de movimientos</h2><p>Tres golpes. Cada uno vence a otro.</p></div><div className="gesture-cards">{moves.map(move => <div className={`gesture-card gesture-${move}`} key={move}><span className="gesture-emoji"><HandIcon move={move} /></span><div><h3>{move}</h3><p>{move === "piedra" ? "Cierra el puño" : move === "papel" ? "Abre la palma" : "Haz una V con dos dedos"}</p><small>Vence a {beats[move]}</small></div></div>)}</div></section>

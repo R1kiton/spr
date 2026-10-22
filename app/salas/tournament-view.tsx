@@ -5,8 +5,8 @@ import { activeMatch, MATCH_WINS, roundName, type PublicMatch } from "../../lib/
 import { HandIcon } from "../hand-icon";
 import { MoveIcon } from "../move-icon";
 
-const youColor = "#2d8cff";
-const rivalColor = "#ff4a3d";
+const youColor = "var(--you)";
+const rivalColor = "var(--rival)";
 const beats: Record<Move, Move> = { piedra: "tijera", papel: "piedra", tijera: "papel" };
 const secondsUntil = (time: number, now: number) => Math.max(0, Math.ceil((time - now) / 1000));
 
@@ -31,13 +31,13 @@ export function TournamentView({ room, now, host, pending, captureBusy, onMove, 
   else if (tournament.breakUntil) clock = { label: "para la siguiente ronda", value: secondsUntil(tournament.breakUntil, now) };
 
   return <>
-    <section className="room-match-heading"><div><span className="room-match-mode">Torneo, eliminación directa al mejor de {MATCH_WINS * 2 - 1}</span><h2>{finished ? "El torneo terminó." : roundName(tournament.current, total)}</h2></div>
+    <section className="room-match-heading"><h2>{finished ? "El torneo terminó." : `${roundName(tournament.current, total)}, al mejor de ${MATCH_WINS * 2 - 1}`}</h2>
       {clock && !finished ? <div className={`room-time ${clock.urgent ? "room-time-urgent" : ""}`} role="timer" aria-label={`${clock.value} ${clock.label}`}><Clock3 size={18} /><strong>{clock.value.toString().padStart(2, "0")}</strong><span>{clock.label}</span></div>
         : <span className="room-phase-badge">{finished ? "Torneo terminado" : `${tournament.rounds[tournament.current].filter(item => item.done).length} de ${tournament.rounds[tournament.current].length} listos`}</span>}
     </section>
 
     <section className="room-card tournament-mine">
-      {finished ? <div className="tournament-champion"><span className="room-result-icon room-result-final"><Trophy size={36} /></span><span className="room-result-kicker">Campeón del torneo</span><h2>{champion ? `¡${nameOf(champion)}${champion === me ? " (tú)" : ""}!` : "Sin campeón"}</h2><p>{champion === me ? "Ganaste todos tus enfrentamientos. La arena es tuya." : "Así quedó el bracket. La revancha está a un clic."}</p>
+      {finished ? <div className="tournament-champion"><span className="room-result-icon room-result-final"><Trophy size={36} /></span><h2>{champion ? `¡${nameOf(champion)}${champion === me ? " (tú)" : ""} gana el torneo!` : "El torneo terminó sin campeón"}</h2><p>{champion === me ? "Ganaste todos tus enfrentamientos. La arena es tuya." : "Así quedó el bracket. La revancha está a un clic."}</p>
         {host ? <button className="primary room-result-next" disabled={!!pending} onClick={onRematch}><span><RotateCcw size={17} /> Preparar otro torneo</span></button> : <span className="room-host-wait"><LoaderCircle className="room-spinner" size={14} /> El anfitrión puede preparar otro torneo.</span>}</div>
         : match ? <MatchCard match={match} me={me!} now={now} nameOf={nameOf} ownMove={room.ownMove} pending={pending} captureBusy={captureBusy} onMove={onMove} />
         : waitingNext ? <div className="tournament-waiting"><span className="room-result-icon"><CheckCheck size={31} /></span><h3>Ganaste tu enfrentamiento.</h3><p>Esperando a que terminen los demás para la siguiente ronda.</p></div>

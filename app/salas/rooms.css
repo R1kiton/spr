@@ -1,12 +1,13 @@
 /* Rooms: the online lobby, wearing the same arcade skin as the solo arena (arena.css). */
-.rooms-page{--seat-gold:#ffcf2e}
+.rooms-page{--seat-gold:var(--gold)}
 .rooms-page button{transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .12s}
 .room-spinner{animation:room-spin 1s linear infinite}
+/* Counters must not wobble as digits change. */
+.room-time strong,.room-code,.tournament-game,.tournament-slot b,.room-ranking-player b,.room-history td small{font-variant-numeric:tabular-nums}
+.room-time strong{min-width:2ch;text-align:center}
 @keyframes room-spin{to{transform:rotate(360deg)}}
 
 /* Intro */
-.rooms-page .room-intro-compact{padding:30px 0 22px}
-.rooms-page .room-intro-compact h1{font-size:clamp(40px,6vw,64px);margin-bottom:12px}
 
 /* Shared surfaces */
 .room-entry-card,.room-card,.room-invite-art,.room-bar,.room-camera-setup.is-active{background:var(--stage);border:2px solid var(--rim);border-radius:6px;box-shadow:0 6px 0 var(--shadow)}
@@ -15,37 +16,37 @@
 .room-card-title h2{display:flex;align-items:center;gap:8px;margin:0;font:400 19px var(--display)}
 .room-card-title>span{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:13px;font-weight:600;white-space:nowrap}
 .room-card-intro{margin:0 0 16px;color:var(--muted);font-size:14px}
-.room-status-dot{display:inline-block;width:8px;height:8px;background:#3ddc84;border-radius:50%;box-shadow:0 0 0 4px #3ddc8433}
+.room-status-dot{display:inline-block;width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 0 4px var(--green-glow)}
 
 /* Alerts */
-.room-alert{display:flex;align-items:center;gap:10px;margin:0 auto 16px;padding:14px 16px;background:#3a0f1c;border:2px solid var(--p1);border-radius:4px;color:#ffd9d4;font-size:14px}
+.room-alert{display:flex;align-items:center;gap:10px;margin:0 auto 16px;padding:14px 16px;background:var(--red-dark);border:2px solid var(--red);border-radius:4px;color:var(--red-ink);font-size:14px}
 .room-alert>span{flex:1}
 .room-alert>button{background:none;color:inherit}
-.room-alert .room-return-access{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;background:var(--p1);color:#fff;border-radius:3px;font-weight:700;white-space:nowrap}
+.room-alert .room-return-access{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;background:var(--red);color:var(--ink);border-radius:3px;font-weight:700;white-space:nowrap}
 .room-alert:has(.room-return-access){flex-wrap:wrap}
-.room-notice{display:flex;align-items:center;gap:8px;margin:0 auto 16px;padding:12px 16px;background:#3a3410;border:2px solid var(--gold);border-radius:4px;color:#fff3c4;font-size:14px}
+.room-notice{display:flex;align-items:center;gap:8px;margin:0 auto 16px;padding:12px 16px;background:var(--notice);border:2px solid var(--gold);border-radius:4px;color:var(--notice-ink);font-size:14px}
 .room-restoring{display:flex;justify-content:center;align-items:center;gap:10px;padding:60px 0;color:var(--muted);font-size:16px}
 
 /* Entry: create or join */
-.room-entry-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;max-width:980px;margin:0 auto}
+.room-entry-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
 .room-entry-card{padding:24px 26px}
 .room-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .room-tabs button{gap:8px;padding:12px 10px;background:var(--shadow);border:2px solid var(--rim);border-radius:3px;color:var(--muted);font-size:14px;font-weight:700;white-space:nowrap;transform:skewX(-10deg)}
 .room-tabs button[aria-pressed=true]{background:var(--gold);border-color:var(--gold);color:var(--shadow);box-shadow:4px 4px 0 var(--shadow)}
 .room-tabs button:hover:not([aria-pressed=true]){border-color:var(--muted)}
 .room-form-heading{padding:22px 0 18px}
-.room-feature-icon{display:grid;place-items:center;width:46px;height:46px;margin-bottom:14px;background:var(--p1);color:#fff;border-radius:4px;transform:skewX(-12deg)}
-.room-feature-icon.join{background:var(--p2)}
+.room-feature-icon{display:grid;place-items:center;width:46px;height:46px;margin-bottom:14px;background:var(--red);color:var(--ink);border-radius:4px;transform:skewX(-12deg)}
+.room-feature-icon.join{background:var(--blue)}
 .room-form-heading h2{margin:0 0 6px;font:400 24px/1.15 var(--display)}
 .room-form-heading p{margin:0;color:var(--muted);font-size:14px}
 .room-label,.room-fieldset legend{display:block;margin:0 0 8px;color:var(--ink);font-size:14px;font-weight:700}
 .room-label:not(:first-child){margin-top:18px}
 .room-input{display:block;width:100%;height:48px;padding:0 14px;background:var(--shadow);border:2px solid var(--rim);border-radius:3px;color:var(--ink);font:500 16px "Chakra Petch",Arial,sans-serif;outline:none}
-.room-input::placeholder{color:#7c70a6}
-.room-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #ffcf2e33}
+.room-input::placeholder{color:var(--placeholder)}
+.room-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-20)}
 .room-input:disabled{opacity:.6}
 .room-code-input{height:60px;font:400 28px var(--display);letter-spacing:8px;text-transform:uppercase;color:var(--gold)}
-.room-code-input::placeholder{color:#4b3d78;letter-spacing:8px}
+.room-code-input::placeholder{color:var(--placeholder-dim);letter-spacing:8px}
 .room-field-hint{margin:8px 0 0;color:var(--muted);font-size:13px}
 .room-fieldset{min-width:0;margin:20px 0 0;padding:0;border:0}
 .room-round-options{display:flex;gap:10px}
@@ -56,20 +57,20 @@
 .room-no-login{display:flex;justify-content:center;align-items:center;gap:6px;margin:12px 0 0;color:var(--muted);font-size:13px}
 
 /* Entry poster */
-.room-invite-art{position:relative;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:30px 28px 66px;background:linear-gradient(var(--gold),var(--gold)) 0 calc(100% - 40px)/100% 3px no-repeat,linear-gradient(#0000 calc(100% - 40px),#1d0f3a calc(100% - 40px),#120927),linear-gradient(#24124d,#5a2470 55%,#d9503f)}
-.room-art-tag{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px;background:#3ddc84;color:var(--shadow);border-radius:3px;font-size:12px;font-weight:700;transform:skewX(-10deg)}
+.room-invite-art{position:relative;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:30px 28px 66px;background:linear-gradient(var(--gold),var(--gold)) 0 calc(100% - 40px)/100% 3px no-repeat,linear-gradient(transparent calc(100% - 40px),var(--floor) calc(100% - 40px),var(--floor-deep)),linear-gradient(var(--sky-top),var(--sky-mid) 55%,var(--sky-horizon))}
+.room-art-tag{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px;background:var(--green);color:var(--shadow);border-radius:3px;font-size:12px;font-weight:700;transform:skewX(-10deg)}
 .room-art-hands{position:relative;display:grid;grid-template-columns:repeat(2,auto);justify-content:center;gap:4px 84px;margin:20px 0 14px;font-size:70px;filter:drop-shadow(4px 4px 0 var(--shadow))}
 .room-art-hands .hand:nth-child(odd){transform:rotate(-8deg)}
 .room-art-hands .hand:nth-child(even){transform:rotate(8deg)}
 .room-art-hands i{position:absolute;top:50%;left:50%;font:400 30px var(--display);font-style:normal;color:var(--gold);-webkit-text-stroke:6px var(--shadow);paint-order:stroke fill;transform:translate(-50%,-50%) skewX(-12deg)}
 .room-invite-art h2{margin:0 0 8px;font:400 30px/1.1 var(--display);text-shadow:3px 3px 0 var(--shadow)}
-.room-invite-art p{margin:0;color:#efe4ff;font-size:15px}
+.room-invite-art p{margin:0;color:var(--lilac);font-size:15px}
 .room-art-details{display:flex;flex-direction:column;gap:8px;margin-top:22px}
 .room-art-details span{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;font-weight:600}
 .room-art-details svg{color:var(--gold)}
 
 /* Quick guide: a real sequence, so it keeps its numbers */
-.room-quick-guide{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:980px;margin:34px auto 0}
+.room-quick-guide{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:34px 0 0}
 .room-quick-guide>div{position:relative;padding-left:52px}
 .room-quick-guide>div>span{position:absolute;top:0;left:0;display:grid;place-items:center;width:38px;height:38px;background:var(--gold);color:var(--shadow);border-radius:3px;font:400 16px var(--display);transform:skewX(-12deg)}
 .room-quick-guide strong{display:block;font:400 16px var(--display)}
@@ -79,20 +80,20 @@
 .room-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;padding:14px 18px}
 .room-bar>div{display:flex;align-items:center;gap:12px}
 .room-bar-label{color:var(--muted);font-size:13px;font-weight:700}
-.room-code{font:400 30px var(--display);letter-spacing:5px;color:var(--gold);-webkit-text-stroke:5px var(--shadow);paint-order:stroke fill;text-shadow:3px 3px 0 var(--p1)}
+.room-code{font:400 30px var(--display);letter-spacing:5px;color:var(--gold);-webkit-text-stroke:5px var(--shadow);paint-order:stroke fill;text-shadow:3px 3px 0 var(--red)}
 .room-icon-button{padding:8px;background:var(--shadow);border:2px solid var(--rim);border-radius:3px;color:var(--ink)}
 .room-icon-button:hover{border-color:var(--gold)}
 .room-soft-button{gap:7px;padding:10px 14px;background:var(--stage-hi);border:2px solid var(--rim);border-radius:3px;color:var(--ink);font-size:14px;font-weight:700;transform:skewX(-10deg)}
 .room-soft-button:hover:not(:disabled){border-color:var(--gold)}
 .room-leave{gap:6px;padding:10px 4px;background:none;color:var(--muted);font-size:14px;font-weight:600}
-.room-leave:hover:not(:disabled){color:var(--p1-text)}
+.room-leave:hover:not(:disabled){color:var(--red-text)}
 
 /* Camera (optional) */
 .room-camera-setup{margin-bottom:18px}
 .room-camera-setup.is-active{display:grid;grid-template-columns:300px 1fr;gap:0 22px;align-items:center;padding:12px}
 .room-camera-panel{position:relative;overflow:hidden;border-radius:4px}
 .room-camera-panel video{display:none;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.room-camera-active{height:200px;background:#0d0820}
+.room-camera-active{height:200px;background:var(--stage-video)}
 .room-camera-active video{display:block}
 .room-camera-off{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 18px;background:var(--stage);border:2px dashed var(--rim);border-radius:6px}
 .room-camera-off>div{display:flex;align-items:center;gap:12px}
@@ -101,17 +102,17 @@
 .room-camera-off strong{font-size:15px}
 .room-camera-off small{color:var(--muted);font-size:13px}
 .room-camera-overlay{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center}
-.room-camera-overlay>span{display:flex;align-items:center;gap:7px;padding:5px 9px;background:#0a0518c0;color:#fff;font-size:12px;font-weight:700;border-radius:3px}
-.room-camera-overlay button{padding:6px;background:#0a0518c0;color:#fff;border-radius:3px}
-.room-camera-detected{position:absolute;bottom:10px;left:50%;display:flex;align-items:center;gap:8px;padding:6px 14px;background:#0a0518d9;border:2px solid var(--gold);border-radius:3px;color:#fff;font-size:14px;font-weight:600;text-transform:capitalize;white-space:nowrap;transform:translate(-50%)}
-.room-camera-detected .move-object{font-size:28px;filter:drop-shadow(2px 2px 0 #000)}
-.room-camera-countdown{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#0a051880;color:#fff}
-.room-camera-countdown strong{font:400 84px/1 var(--display);color:var(--gold);-webkit-text-stroke:9px var(--shadow);paint-order:stroke fill;text-shadow:6px 6px 0 var(--p1)}
+.room-camera-overlay>span{display:flex;align-items:center;gap:7px;padding:5px 9px;background:var(--overlay-75);color:var(--ink);font-size:12px;font-weight:700;border-radius:3px}
+.room-camera-overlay button{padding:6px;background:var(--overlay-75);color:var(--ink);border-radius:3px}
+.room-camera-detected{position:absolute;bottom:10px;left:50%;display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--overlay-85);border:2px solid var(--gold);border-radius:3px;color:var(--ink);font-size:14px;font-weight:600;text-transform:capitalize;white-space:nowrap;transform:translate(-50%)}
+.room-camera-detected .move-object{font-size:28px;filter:drop-shadow(2px 2px 0 var(--shadow))}
+.room-camera-countdown{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:var(--overlay-50);color:var(--ink)}
+.room-camera-countdown strong{font:400 84px/1 var(--display);color:var(--gold);-webkit-text-stroke:9px var(--shadow);paint-order:stroke fill;text-shadow:6px 6px 0 var(--red)}
 .room-camera-countdown span{font-weight:700;text-shadow:2px 2px 0 var(--shadow)}
 .room-capture-toolbar{display:flex;flex-direction:column;align-items:flex-start;gap:14px}
 .room-capture-toolbar>span{display:flex;align-items:flex-start;gap:8px;max-width:420px;color:var(--muted);font-size:14px}
 .room-capture-toolbar>span svg{flex-shrink:0;margin-top:3px}
-.room-camera-error{grid-column:1/-1;margin:10px 0 0;color:var(--p1-text);font-size:14px}
+.room-camera-error{grid-column:1/-1;margin:10px 0 0;color:var(--red-text);font-size:14px}
 
 /* Lobby */
 .room-lobby-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
@@ -123,8 +124,8 @@
 .room-player strong{overflow:hidden;font:400 15px var(--display);white-space:nowrap;text-overflow:ellipsis}
 .room-player strong small,.room-ranking-player strong small{margin-left:4px;color:var(--gold);font:700 12px "Chakra Petch",sans-serif}
 .room-player>div>span{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
-.room-player i{width:7px;height:7px;background:#6d6390;border-radius:50%}
-.room-player i.online{background:#3ddc84}
+.room-player i{width:7px;height:7px;background:var(--dot-idle);border-radius:50%}
+.room-player i.online{background:var(--green)}
 .room-host-label{display:flex;align-items:center;gap:5px;margin-left:auto;color:var(--gold);font-size:12px;font-weight:700}
 .room-empty-slot{display:flex;justify-content:center;align-items:center;gap:8px;height:62px;border:2px dashed var(--rim);border-radius:4px;color:var(--muted);font-size:14px}
 .room-waiting-hint{display:flex;align-items:center;gap:8px;margin-top:16px;color:var(--muted);font-size:13px}
@@ -134,7 +135,7 @@
 .room-setting-buttons button[aria-pressed=true]{border-color:var(--gold);color:var(--ink)}
 .room-setting-buttons button:disabled,.room-round-options button:disabled{opacity:1;cursor:default}
 .room-setting-buttons button:disabled:not([aria-pressed=true]),.room-round-options button:disabled:not([aria-pressed=true]){opacity:.5}
-.room-rules{margin-top:20px;padding:14px;background:var(--shadow);border-left:5px solid var(--gold);border-radius:3px}
+.room-rules{margin-top:20px;padding:14px;background:var(--shadow);border:2px solid var(--gold-35);border-radius:3px}
 .room-rules strong{font:400 15px var(--display)}
 .room-rules p{margin:6px 0 0;color:var(--muted);font-size:14px}
 .rooms-page .room-start{width:100%;margin-top:20px}
@@ -142,40 +143,38 @@
 
 /* Match */
 .room-match-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:4px 0 18px}
-.room-match-mode{color:var(--muted);font-size:14px;font-weight:700}
 .room-match-heading h2{margin:2px 0 0;font:400 clamp(28px,4vw,40px)/1.1 var(--display);text-shadow:3px 3px 0 var(--shadow)}
 .room-time{display:grid;grid-template-columns:auto auto;align-items:center;gap:0 8px;padding:8px 16px;background:var(--shadow);border:3px solid var(--gold);border-radius:4px;line-height:1}
 .room-time svg{grid-row:span 2;color:var(--gold)}
 .room-time strong{font:400 40px var(--display)}
 .room-time>span{color:var(--muted);font-size:12px;font-weight:700}
-.room-time-urgent{border-color:var(--p1)}
-.room-time-urgent strong,.room-time-urgent svg{color:var(--p1-text)}
+.room-time-urgent{border-color:var(--red)}
+.room-time-urgent strong,.room-time-urgent svg{color:var(--red-text)}
 .room-phase-badge{padding:8px 14px;background:var(--stage-hi);border:2px solid var(--rim);border-radius:3px;color:var(--ink);font-size:14px;font-weight:700;transform:skewX(-10deg)}
 .room-game-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}
 .room-move-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px 0}
-.room-move-buttons button{flex-direction:column;gap:6px;padding:18px 8px 14px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px;color:var(--ink);box-shadow:5px 5px 0 #000}
-.room-move-buttons button:hover:not(:disabled){border-color:var(--gold);transform:translate(-2px,-2px);box-shadow:7px 7px 0 #000}
-.room-move-buttons button:active:not(:disabled){transform:translate(3px,3px);box-shadow:2px 2px 0 #000}
-.room-move-buttons .hand{font-size:72px;filter:drop-shadow(3px 3px 0 #000)}
+.room-move-buttons button{flex-direction:column;gap:6px;padding:18px 8px 14px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px;color:var(--ink);box-shadow:5px 5px 0 var(--shadow)}
+.room-move-buttons button:hover:not(:disabled){border-color:var(--gold);transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--shadow)}
+.room-move-buttons button:active:not(:disabled){transform:translate(3px,3px);box-shadow:2px 2px 0 var(--shadow)}
+.room-move-buttons .hand{font-size:72px;filter:drop-shadow(3px 3px 0 var(--shadow))}
 .room-move-buttons strong{font:400 17px var(--display);text-transform:capitalize}
 .room-move-buttons small{color:var(--gold);font-size:13px;font-weight:700}
 .room-deadline-message{margin:12px 0 0;text-align:center;color:var(--gold);font-weight:700}
 .room-submitted{position:relative;display:flex;flex-direction:column;align-items:center;padding:16px 10px;text-align:center}
-.room-submitted-emoji{font-size:96px;line-height:0;filter:drop-shadow(4px 4px 0 #000)}
-.room-success-check{position:absolute;top:18px;left:calc(50% + 34px);display:grid;place-items:center;width:38px;height:38px;background:#3ddc84;color:var(--shadow);border:3px solid var(--shadow);border-radius:50%}
+.room-submitted-emoji{font-size:96px;line-height:0;filter:drop-shadow(4px 4px 0 var(--shadow))}
+.room-success-check{position:absolute;top:18px;left:calc(50% + 34px);display:grid;place-items:center;width:38px;height:38px;background:var(--green);color:var(--shadow);border:3px solid var(--shadow);border-radius:50%}
 .room-submitted h3{margin:14px 0 6px;font:400 22px var(--display)}
 .room-submitted p{margin:0;color:var(--muted);font-size:14px}
 .room-submitted-count{margin-top:14px;padding:6px 12px;background:var(--shadow);border:2px solid var(--rim);border-radius:3px;font-size:13px;font-weight:700}
 .room-round-result{display:flex;flex-direction:column;align-items:center;text-align:center}
-.room-result-icon{display:grid;place-items:center;width:62px;height:62px;background:#3ddc84;color:var(--shadow);border:3px solid var(--shadow);border-radius:4px;box-shadow:4px 4px 0 #000;transform:skewX(-10deg)}
+.room-result-icon{display:grid;place-items:center;width:62px;height:62px;background:var(--green);color:var(--shadow);border:3px solid var(--shadow);border-radius:4px;box-shadow:4px 4px 0 var(--shadow);transform:skewX(-10deg)}
 .room-result-final{background:var(--gold)}
-.room-result-kicker{margin-top:14px;color:var(--muted);font-size:14px;font-weight:700}
-.room-round-result h2{margin:4px 0 6px;font:400 clamp(26px,3.6vw,36px)/1.15 var(--display);color:var(--gold);-webkit-text-stroke:6px var(--shadow);paint-order:stroke fill;text-shadow:4px 4px 0 var(--p1)}
+.room-round-result h2{margin:4px 0 6px;font:400 clamp(26px,3.6vw,36px)/1.15 var(--display);color:var(--gold);-webkit-text-stroke:6px var(--shadow);paint-order:stroke fill;text-shadow:4px 4px 0 var(--red)}
 .room-round-result>p{margin:0;color:var(--muted)}
 .room-revealed-moves{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;width:100%;margin:20px 0}
 .room-revealed-moves>div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 8px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px}
 .room-revealed-moves>div.is-me{border-color:var(--gold)}
-.room-revealed-moves>div>span{font-size:60px;line-height:1;filter:drop-shadow(3px 3px 0 #000)}
+.room-revealed-moves>div>span{font-size:60px;line-height:1;filter:drop-shadow(3px 3px 0 var(--shadow))}
 .room-revealed-moves strong{max-width:100%;overflow:hidden;font:400 14px var(--display);white-space:nowrap;text-overflow:ellipsis}
 .room-revealed-moves small{display:block;color:var(--muted);font-size:13px}
 .room-revealed-moves small::first-letter{text-transform:uppercase}
@@ -241,7 +240,7 @@
 /* Room kind: duel or tournament */
 .room-kind-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .room-kind-options button{flex-direction:column;align-items:flex-start;gap:4px;padding:12px 14px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px;color:var(--muted);text-align:left}
-.room-kind-options button[aria-pressed=true]{background:#1d1140;border-color:var(--gold);box-shadow:4px 4px 0 #000}
+.room-kind-options button[aria-pressed=true]{background:var(--stage-low);border-color:var(--gold);box-shadow:4px 4px 0 var(--shadow)}
 .room-kind-options button:hover:not([aria-pressed=true]):not(:disabled){border-color:var(--muted)}
 .room-kind-options strong{color:var(--ink);font:400 17px var(--display)}
 .room-kind-options small{font-size:12px}
@@ -252,19 +251,19 @@
 .tournament-side{display:flex;flex-direction:column;gap:8px;min-width:0}
 .tournament-side.rival{align-items:flex-end;text-align:right}
 .tournament-side strong{overflow:hidden;font:400 20px var(--display);white-space:nowrap;text-overflow:ellipsis}
-.tournament-side.you strong{color:var(--p2-text)}
-.tournament-side.rival strong{color:var(--p1-text)}
+.tournament-side.you strong{color:var(--blue-text)}
+.tournament-side.rival strong{color:var(--red-text)}
 .tournament-side strong small{color:var(--gold);font:700 12px "Chakra Petch",sans-serif}
 .tournament-pips{display:flex;gap:6px}
 .tournament-pips i{width:26px;height:12px;background:var(--shadow);border:2px solid var(--rim);transform:skewX(-20deg)}
-.tournament-side.you .tournament-pips i.won{background:var(--p2);border-color:var(--shadow)}
-.tournament-side.rival .tournament-pips i.won{background:var(--p1);border-color:var(--shadow)}
+.tournament-side.you .tournament-pips i.won{background:var(--blue);border-color:var(--shadow)}
+.tournament-side.rival .tournament-pips i.won{background:var(--red);border-color:var(--shadow)}
 .tournament-game{padding:8px 12px;background:var(--shadow);border:3px solid var(--gold);border-radius:4px;font:400 15px var(--display);white-space:nowrap}
 .tournament-last{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:10px;color:var(--muted);font-size:14px;font-weight:700}
-.tournament-last .move-object{font-size:40px;filter:drop-shadow(2px 2px 0 #000)}
+.tournament-last .move-object{font-size:40px;filter:drop-shadow(2px 2px 0 var(--shadow))}
 .tournament-last .move-object.is-empty{opacity:.25}
 .tournament-champion,.tournament-waiting{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0;text-align:center}
-.tournament-champion h2{margin:4px 0;font:400 clamp(30px,4.4vw,46px)/1.1 var(--display);color:var(--gold);-webkit-text-stroke:7px var(--shadow);paint-order:stroke fill;text-shadow:5px 5px 0 var(--p1)}
+.tournament-champion h2{margin:4px 0;font:400 clamp(30px,4.4vw,46px)/1.1 var(--display);color:var(--gold);-webkit-text-stroke:7px var(--shadow);paint-order:stroke fill;text-shadow:5px 5px 0 var(--red)}
 .tournament-champion p,.tournament-waiting p{margin:0 0 10px;color:var(--muted)}
 .tournament-waiting h3{margin:8px 0 0;font:400 22px var(--display)}
 .tournament-bracket{display:grid;gap:14px;overflow-x:auto;padding-bottom:6px}
@@ -273,8 +272,8 @@
 .tournament-round.is-current h3{color:var(--gold)}
 .tournament-round-matches{display:flex;flex:1;flex-direction:column;justify-content:space-around;gap:10px}
 .tournament-match{position:relative;background:var(--shadow);border:2px solid var(--rim);border-radius:4px}
-.tournament-match.is-live{border-color:var(--gold);box-shadow:3px 3px 0 #000}
-.tournament-match.is-live:after{content:"";position:absolute;top:-5px;right:-5px;width:10px;height:10px;background:#3ddc84;border:2px solid var(--shadow);border-radius:50%}
+.tournament-match.is-live{border-color:var(--gold);box-shadow:3px 3px 0 var(--shadow)}
+.tournament-match.is-live:after{content:"";position:absolute;top:-5px;right:-5px;width:10px;height:10px;background:var(--green);border:2px solid var(--shadow);border-radius:50%}
 .tournament-match>small{display:block;padding:0 10px 6px;color:var(--muted);font-size:11px}
 .tournament-slot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;font-size:14px}
 .tournament-slot+.tournament-slot{border-top:1px solid var(--rim)}
@@ -283,8 +282,8 @@
 .tournament-slot.is-winner span,.tournament-slot.is-winner b{color:var(--gold)}
 .tournament-slot.is-winner svg{flex-shrink:0;color:var(--gold)}
 .tournament-slot.is-out{opacity:.45}
-.tournament-slot.is-me{box-shadow:inset 4px 0 0 var(--p2)}
-.tournament-slot.is-me span{color:var(--p2-text);font-weight:700}
+.tournament-slot.is-me{background:var(--blue-dark)}
+.tournament-slot.is-me span{color:var(--blue-text);font-weight:700}
 @media (max-width:680px){
   .room-kind-options{grid-template-columns:1fr}
   .tournament-side strong{font-size:16px}
