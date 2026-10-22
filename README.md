@@ -4,7 +4,7 @@ Juego de piedra, papel o tijera con Next.js, TypeScript y MediaPipe Gesture Reco
 
 ## Salas con amigos
 
-Abre **Jugar con amigos** o `/salas`. Para crear una sala o unirse por código solo hace falta un nombre: no hay cuentas, correos, contraseñas ni inicio de sesión.
+Abre la pestaña **Con amigos** o `/salas`. Para crear una sala o unirse por código solo hace falta un nombre: no hay cuentas, correos, contraseñas ni inicio de sesión.
 
 - De 2 a 4 jugadores en **Todos contra todos**, o 4 jugadores en **Equipos 2 contra 2**. Cada quien usa su propio dispositivo.
 - El anfitrión elige una partida de **3 o 5 rondas**, invita con un código de 6 caracteres o un enlace y comienza la partida.
@@ -53,7 +53,7 @@ npm install
 npm run dev
 ```
 
-Abre http://localhost:3000. Pulsa **Activar cámara**, permite su uso y después **Jugar una ronda**. Durante los 3 segundos de cuenta regresiva forma uno de estos gestos:
+Abre http://localhost:3000. Pulsa **Activar cámara** y permite su uso. Contra la computadora no hay botón para jugar: forma uno de estos gestos y mantenlo 2 segundos, hasta que se llene la barra, y la ronda se juega sola:
 
 | Gesto | Jugada |
 | --- | --- |
@@ -61,28 +61,21 @@ Abre http://localhost:3000. Pulsa **Activar cámara**, permite su uso y después
 | Palma abierta | Papel |
 | Índice y medio formando V | Tijera |
 
-Usa una sola mano, con la palma hacia la cámara y buena iluminación. Mantén el gesto al menos 350 ms antes de terminar la cuenta. La confianza mínima es 65%. Las rondas sin una señal estable no cuentan.
+Usa una sola mano, con la palma hacia la cámara y buena iluminación. La barra solo avanza mientras se reconoce el mismo gesto con confianza mínima de 65%; una pérdida de detección de hasta 300 ms no la reinicia. Después de cada ronda hay que bajar la mano o cambiar de gesto para lanzar la siguiente.
 
 **Probar sin cámara** permite jugar con botones. Incluye marcador, empates, últimas cinco rondas y reinicio. El marcador vive en memoria y se borra al recargar.
 
-## Dos personas
-
-Selecciona **Dos personas** antes de activar la cámara. Ambos jugadores usan la misma cámara y computadora:
-
-1. Jugador 1 muestra una mano a la izquierda de la imagen que ve en pantalla.
-2. Jugador 2 muestra una mano a la derecha de esa imagen.
-3. Pulsa **Jugar una ronda** y mantengan ambos gestos al terminar los 3 segundos.
-
-Los lados se asignan por posición en pantalla, no por mano derecha o izquierda. Eviten cruzar las manos o colocarlas en el centro. Se requieren dos gestos estables para contar la ronda. El marcador y el historial indican quién ganó; al cambiar de modo se reinician y se desactiva la cámara. El modo manual corresponde únicamente al juego contra la computadora.
-
 ## Funcionamiento
 
-- `app/page.tsx`: interfaz, cámara, reconocimiento y ciclo de cada ronda.
+- `app/page.tsx`: interfaz, cámara, reconocimiento y ciclo de cada ronda contra la computadora.
+- `app/arena-nav.tsx`, `app/arena.css` y `app/hand-icon.tsx`: barra superior, pestañas de modo, estilo de arcade y manos ilustradas que comparten la arena y las salas.
 - `lib/game.ts`: gestos admitidos, elección aleatoria y reglas.
+- `lib/hold.ts`: tiempo que hay que mantener un gesto para lanzar la ronda contra la computadora.
 - `public/mediapipe`: modelo y runtime WASM servidos por la aplicación.
 - `tests/game.test.ts`: las nueve combinaciones de resultados y validación de gestos.
+- `tests/hold.test.ts`: disparo al mantener un gesto, rearme y tolerancia a pérdidas breves de detección.
 
-La computadora elige aleatoriamente antes de capturar la jugada del usuario. No consulta el gesto reconocido para elegir. El reconocimiento analiza hasta unos 12 fotogramas por segundo en el dispositivo; no se envían ni almacenan imágenes. Al cambiar de pestaña, desactivar la cámara o salir de la página se detiene la cámara y se cancela la ronda activa.
+La computadora elige aleatoriamente antes de que el usuario empiece a mantener su gesto. No consulta el gesto reconocido para elegir. El reconocimiento analiza hasta unos 12 fotogramas por segundo en el dispositivo; no se envían ni almacenan imágenes. Al cambiar de pestaña, desactivar la cámara o salir de la página se detiene la cámara y se cancela la ronda activa.
 
 ## Validación y producción
 

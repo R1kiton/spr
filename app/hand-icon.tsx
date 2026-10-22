@@ -3,7 +3,8 @@ import type { Move } from "../lib/game";
 
 const line = "#0a0518";
 const skin = "#ffe2bd";
-const wraps = { p1: "#ff4a3d", p2: "#2d8cff" };
+// p1 is you (blue), p2 is the rival (red).
+const wraps = { p1: "#2d8cff", p2: "#ff4a3d" };
 
 // Each hand is a silhouette (drawn twice: thick outline, then fill, so overlaps
 // leave no seams), optional crease lines, and parts that sit in front (the thumb).
@@ -34,10 +35,10 @@ const shapes: Record<Move, { silhouette: ReactNode; creases?: string; front?: Re
   },
 };
 
-type Props = { move: Move; side?: "p1" | "p2"; label?: string; className?: string };
+type Props = { move: Move; side?: "p1" | "p2"; wrap?: string; label?: string; className?: string };
 
-/** Cartoon fighter hand. Sized at 1em so it drops in where an emoji was; p2 faces left. */
-export function HandIcon({ move, side = "p1", label, className }: Props) {
+/** Cartoon fighter hand. Sized at 1em so it drops in where an emoji was; p2 faces left. `wrap` overrides the wrist color. */
+export function HandIcon({ move, side = "p1", wrap, label, className }: Props) {
   const { silhouette, creases, front } = shapes[move];
   const wrist = <rect x="18" y="48" width="28" height="13" rx="3" />;
   return <svg viewBox="0 0 64 64" width="1em" height="1em" className={className ? `hand ${className}` : "hand"} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true} strokeLinecap="round" strokeLinejoin="round">
@@ -46,7 +47,7 @@ export function HandIcon({ move, side = "p1", label, className }: Props) {
       <g fill={skin}>{silhouette}</g>
       {creases && <path d={creases} fill="none" stroke={line} strokeWidth="2.6" />}
       {front && <g fill={skin} stroke={line} strokeWidth="3">{front}</g>}
-      <g fill={wraps[side]}>{wrist}</g>
+      <g fill={wrap ?? wraps[side]}>{wrist}</g>
       <path d="M19 54.5h26" stroke={line} strokeWidth="2" opacity=".35" />
     </g>
   </svg>;
