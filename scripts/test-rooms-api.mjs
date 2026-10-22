@@ -41,7 +41,7 @@ async function request(guest, path, body, expected = 200, extraHeaders = {}) {
 
 function publicState(room, guest) {
   assert.match(room.code, /^[A-Z2-9]{6}$/);
-  assert.ok(room.players.length <= 4);
+  assert.ok(room.players.length <= (room.mode === "tournament" ? 16 : 2), "Duels hold 2 players and tournaments 16.");
   assert.ok(room.players.every(player => !("tokenHash" in player)));
   const serialized = JSON.stringify(room);
   assert.ok(!serialized.includes("server_key_hash") && !serialized.includes("p_server_key"), "Storage credentials must remain private.");
@@ -121,39 +121,39 @@ async function verify() {
   await request(anonymous, "/api/rooms", { intent: "create", name: "Cross Origin", mode: "solo", roundLimit: 3 }, 403, { Origin: "https://foreign.example" });
   await enter(anonymous, { intent: "create", name: "Oversized", mode: "solo", roundLimit: 3, extra: "x".repeat(4100) }, 413);
 
+  await enter(anonymous, { intent: "create", name: "Team Host", mode: "teams", roundLimit: 3 }, 400);
+
   const host = client("Test Host");
   const outsider = client("Other Host");
-  let room = await create(host, "teams", 5);
+  let room = await create(host, "solo", 5);
   const isolated = await create(outsider, "solo", 3);
   await read(anonymous, room.code, 403);
   await read(outsider, room.code, 403);
   await action(outsider, room.code, { type: "start" }, 403);
   await action(outsider, isolated.code, { type: "start" }, 400);
   await databaseIsolation(room.code);
-  console.log("OK: Guest sessions, input validation, origin checks, and room isolation.");
+  console.log("OK: Guest sessions, input validation, origin checks, team mode disabled, and room isolation.");
 
-  const candidates = ["Guest One", "Guest Two", "Guest Three", "Guest Four"].map(client);
+  const candidates = ["Guest One", "Guest Two"].map(client);
   const joined = await Promise.all(candidates.map(guest => join(guest, room.code.toLowerCase(), null)));
-  assert.equal(joined.filter(result => result.status === 200).length, 3, "Only three guests may join a host, including simultaneous requests.");
-  assert.equal(joined.filter(result => result.status === 400).length, 1, "The fifth player must be rejected.");
-  const members = [host, ...candidates.filter((_, index) => joined[index].status === 200)];
+  assert.equal(joined.filter(result => result.status === 200).length, 1, "Only one guest may join a host, including simultaneous requests.");
+  assert.equal(joined.filter(result => result.status === 400).length, 1, "The third player must be rejected.");
+  const guest = candidates.find((_, index) => joined[index].status === 200);
+  const members = [host, guest];
   room = await read(host, room.code);
-  assert.equal(room.players.length, 4);
-  assert.equal(new Set(room.players.map(player => player.id)).size, 4);
-  const repeated = await join(members[1], room.code);
-  assert.equal(repeated.data.players.length, 4, "Rejoining the same session must not consume another seat.");
-  await action(members[1], room.code, { type: "start" }, 400);
-  await action(members[1], room.code, { type: "settings", mode: "solo", roundLimit: 3 }, 400);
+  assert.equal(room.players.length, 2);
+  assert.equal(new Set(room.players.map(player => player.id)).size, 2);
+  const repeated = await join(guest, room.code);
+  assert.equal(repeated.data.players.length, 2, "Rejoining the same session must not consume another seat.");
+  await action(guest, room.code, { type: "start" }, 400);
+  await action(guest, room.code, { type: "settings", mode: "solo", roundLimit: 3 }, 400);
+  await action(host, room.code, { type: "settings", mode: "teams", roundLimit: 5 }, 400);
+  await action(host, room.code, { type: "team", team: "b" }, 400);
   await action(host, room.code, { type: "unknown" }, 400);
-  await action(host, room.code, { type: "team", team: "b" });
-  await action(host, room.code, { type: "start" }, 400);
-  await action(host, room.code, { type: "team", team: "a" });
   room = (await action(host, room.code, { type: "start" })).data;
   assert.equal(room.round, 1);
   assert.equal(room.phase, "playing");
   assert.ok(room.deadline > room.serverNow);
-  assert.equal(room.players.filter(player => player.team === "a").length, 2);
-  assert.equal(room.players.filter(player => player.team === "b").length, 2);
   await action(host, room.code, { type: "settings", mode: "solo", roundLimit: 3 }, 400);
   await join(outsider, room.code, 400);
   await action(host, room.code, { ...moveBody(room, "piedra"), matchId: "outdated-match" }, 400);
@@ -163,33 +163,32 @@ async function verify() {
   const first = (await action(host, room.code, moveBody(room, "piedra"))).data;
   assert.equal(first.ownMove, "piedra");
   assert.equal(first.players.find(player => player.id === first.meId).submitted, true);
-  const opponentView = await read(members[1], room.code);
+  const opponentView = await read(guest, room.code);
   assert.deepEqual(opponentView.moves, {});
   assert.equal(opponentView.ownMove, null);
   assert.deepEqual(opponentView.history, []);
   await action(host, room.code, moveBody(room, "papel"), 400);
   await action(host, room.code, moveBody(room, "piedra"));
-  const teams = new Map(room.players.map(player => [player.name, player.team]));
-  const teamMove = guest => teams.get(guest.name) === "a" ? "piedra" : "tijera";
-  await Promise.all(members.slice(1).map(guest => action(guest, room.code, moveBody(room, teamMove(guest)))));
+  await action(guest, room.code, moveBody(room, "tijera"));
   room = await read(host, room.code);
   assert.equal(room.phase, "between");
   assert.equal(room.history.length, 1);
-  assert.deepEqual(room.teamScores, { a: 4, b: 0 });
+  assert.equal(room.players.find(player => player.id === room.hostId).score, 1);
   await action(host, room.code, moveBody(room, "piedra"));
   await action(host, room.code, moveBody(room, "papel"), 400);
-  await action(members[1], room.code, { type: "next" }, 400);
-  console.log("OK: Four-player capacity, team balance, host permissions, and private immutable moves.");
+  await action(guest, room.code, { type: "next" }, 400);
+  console.log("OK: Two-player capacity, host permissions, and private immutable moves.");
 
+  const hostWins = player => player === host ? "piedra" : "tijera";
   for (let round = 2; round <= 5; round++) {
     room = (await action(host, room.code, { type: "next" })).data;
     assert.equal(room.round, round);
-    room = await submitAll(room, members, teamMove);
-    assert.deepEqual(room.teamScores, { a: round * 4, b: 0 });
-    for (const player of room.players) assert.equal(player.score, player.team === "a" ? round * 2 : 0);
+    room = await submitAll(room, members, hostWins);
+    assert.equal(room.players.find(player => player.id === room.hostId).score, round);
+    assert.ok(room.players.filter(player => player.id !== room.hostId).every(player => player.score === 0));
   }
   const previousMatch = room.matchId;
-  await action(members[1], room.code, { type: "rematch" }, 400);
+  await action(guest, room.code, { type: "rematch" }, 400);
   room = (await action(host, room.code, { type: "rematch" })).data;
   assert.equal(room.phase, "lobby");
   assert.equal(room.round, 0);
@@ -197,27 +196,25 @@ async function verify() {
   assert.ok(room.players.every(player => player.score === 0));
   assert.notEqual(room.matchId, previousMatch);
   room = (await action(host, room.code, { type: "settings", mode: "solo", roundLimit: 3 })).data;
-  assert.equal(room.mode, "solo");
   assert.equal(room.roundLimit, 3);
-  assert.ok(room.players.every(player => player.team === null));
   room = (await action(host, room.code, { type: "start" })).data;
   await action(host, room.code, { ...moveBody(room, "piedra"), matchId: previousMatch }, 400);
   for (let round = 1; round <= 3; round++) {
     if (round > 1) room = (await action(host, room.code, { type: "next" })).data;
-    room = await submitAll(room, members, guest => guest === host ? "piedra" : "tijera");
-    assert.equal(room.players.find(player => player.id === room.hostId).score, round * 3);
-    assert.ok(room.players.filter(player => player.id !== room.hostId).every(player => player.score === 0));
+    room = await submitAll(room, members, () => "papel");
+    assert.ok(room.players.every(player => player.score === 0));
+    assert.deepEqual(room.history[round - 1].winners, []);
   }
   assert.equal(room.phase, "finished");
   assert.equal(room.history.length, 3);
-  console.log("OK: Complete five-round 2v2 match, rematch, and three-round free-for-all with concurrent submissions.");
+  console.log("OK: Complete five-round duel, rematch, and three tied rounds with concurrent submissions.");
 
   assert.deepEqual((await action(host, room.code, { type: "leave" })).data, { left: true });
   await read(host, room.code, 403);
-  const transferred = await read(members[1], room.code);
-  assert.equal(transferred.players.length, 3);
+  const transferred = await read(guest, room.code);
+  assert.equal(transferred.players.length, 1);
   assert.notEqual(transferred.hostId, room.hostId);
-  assert.ok(transferred.players.some(player => player.id === transferred.hostId));
+  assert.equal(transferred.hostId, transferred.meId);
   assert.equal(transferred.phase, "lobby");
   assert.deepEqual(transferred.history, []);
 
@@ -225,14 +222,41 @@ async function verify() {
   await join(duplicate, isolated.code, 400);
   const rival = client("Duel Rival");
   await join(rival, ` ${isolated.code.toLowerCase()} `);
+  await join(client("Late Third"), isolated.code, 400);
   let duel = (await action(outsider, isolated.code, { type: "start" })).data;
   for (let round = 1; round <= 3; round++) {
     if (round > 1) duel = (await action(outsider, duel.code, { type: "next" })).data;
-    duel = await submitAll(duel, [outsider, rival], () => "papel");
-    assert.ok(duel.players.every(player => player.score === 0));
-    assert.deepEqual(duel.history[round - 1].winners, []);
+    duel = await submitAll(duel, [outsider, rival], player => player === outsider ? "papel" : "piedra");
   }
-  console.log("OK: Host transfer, leave/reset, duplicate names, two-player play, and tied rounds.");
+  assert.equal(duel.players.find(player => player.id === duel.hostId).score, 3);
+  console.log("OK: Host transfer, leave/reset, duplicate names, full duel rooms, and a second independent duel.");
+
+  const organizer = client("Cup Host");
+  let cup = await create(organizer, "tournament", 3);
+  const entrants = [organizer, ...["Cup Two", "Cup Three"].map(client)];
+  for (const entrant of entrants.slice(1)) await join(entrant, cup.code);
+  await action(organizer, cup.code, { type: "start" }, 400);
+  const fourth = client("Cup Four");
+  await join(fourth, cup.code);
+  entrants.push(fourth);
+  cup = (await action(organizer, cup.code, { type: "start" })).data;
+  assert.equal(cup.phase, "playing");
+  assert.equal(cup.tournament.rounds[0].length, 2);
+  assert.equal(cup.tournament.rounds.length, 2);
+  await action(organizer, cup.code, { type: "next" }, 400);
+  const byId = new Map(cup.players.map(player => [player.id, entrants.find(guest => guest.name === player.name)]));
+  for (let game = 1; game <= 2; game++) {
+    cup = await read(organizer, cup.code);
+    for (const match of cup.tournament.rounds[0].filter(item => !item.done)) {
+      await action(byId.get(match.a), cup.code, { type: "move", move: "piedra", round: match.game, matchId: cup.matchId });
+      await action(byId.get(match.b), cup.code, { type: "move", move: "tijera", round: match.game, matchId: cup.matchId });
+    }
+    if (game === 1) await new Promise(resolve => setTimeout(resolve, 3200));
+  }
+  cup = await read(organizer, cup.code);
+  assert.ok(cup.tournament.rounds[0].every(match => match.done && match.winner === match.a), "Each first-round match ends 2-0 for side a.");
+  assert.deepEqual([cup.tournament.rounds[1][0].a, cup.tournament.rounds[1][0].b], cup.tournament.rounds[0].map(match => match.a));
+  console.log("OK: Four-player tournament with a best-of-3 first round and winners placed in the final.");
 }
 
 try {

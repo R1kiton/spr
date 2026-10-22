@@ -7,7 +7,7 @@ export function ArenaTopbar({ children }: { children?: ReactNode }) {
 
 const tabs = [
   { id: "cpu", href: "/", icon: <Cpu size={22} />, title: "1P vs CPU", detail: "Contra la computadora" },
-  { id: "friends", href: "/salas", icon: <Users size={22} />, title: "Con amigos", detail: "Salas en línea, hasta 4" },
+  { id: "friends", href: "/salas", icon: <Users size={22} />, title: "Con amigos", detail: "Duelos y torneos en línea" },
 ] as const;
 
 /** Mode select shared by the solo arena and the rooms page. */

@@ -6,15 +6,22 @@ Juego de piedra, papel o tijera con Next.js, TypeScript y MediaPipe Gesture Reco
 
 Abre la pestaña **Con amigos** o `/salas`. Para crear una sala o unirse por código solo hace falta un nombre: no hay cuentas, correos, contraseñas ni inicio de sesión.
 
-- De 2 a 4 jugadores en **Todos contra todos**, o 4 jugadores en **Equipos 2 contra 2**. Cada quien usa su propio dispositivo.
+- Al crear la sala se elige **Duelo** (2 jugadores, a 3 o 5 rondas) o **Torneo** (de 4 a 16 jugadores). Cada quien usa su propio dispositivo. El motor de `lib/rooms.ts` también admite equipos 2 contra 2, pero la API no los ofrece.
 - El anfitrión elige una partida de **3 o 5 rondas**, invita con un código de 6 caracteres o un enlace y comienza la partida.
-- En equipos, cada persona puede elegir su lado antes de empezar. Se requieren dos personas por equipo.
 - Cada ronda da **20 segundos** para confirmar un gesto con botones o con la cámara. La cámara es opcional, procesa localmente y no transmite video.
-- Las jugadas quedan guardadas y ocultas hasta que todos confirmen o venza el tiempo. No se pueden cambiar después de enviarlas.
-- Cada jugador suma 1 punto por cada rival vencido; en equipos solo se comparan rivales y se suman los puntos del equipo. Un gesto válido vence a quien no envió jugada. Los empates también cuentan como ronda.
+- Las jugadas quedan guardadas y ocultas hasta que ambos confirmen o venza el tiempo. No se pueden cambiar después de enviarlas.
+- Cada ronda ganada suma 1 punto. Un gesto válido vence a quien no envió jugada. Los empates también cuentan como ronda.
 - Se juegan todas las rondas elegidas; gana la puntuación acumulada más alta, con victoria compartida si hay empate. Después se puede preparar otra partida.
-- Una cookie privada conserva el lugar del jugador al recargar. Las plazas del lobby se liberan tras 60 segundos sin actividad. Si el anfitrión se desconecta, otro jugador activo toma su lugar. Salir durante una partida devuelve a los demás al lobby.
+- Una cookie privada conserva el lugar del jugador al recargar. Las plazas del lobby se liberan tras 60 segundos sin actividad. Si el anfitrión se desconecta, el otro jugador toma su lugar. Salir durante una partida devuelve al rival al lobby.
 - Las salas caducan después de 24 horas sin actividad. El juego local sigue funcionando sin configurar Supabase.
+
+### Torneo
+
+- Eliminación directa con bracket sorteado al empezar. Si no son 4, 8 o 16 jugadores, los mejores sembrados pasan directo a la siguiente ronda.
+- Cada enfrentamiento es **al mejor de 3**: avanza quien gane 2 juegos. Los empates se repiten. Cada juego dura 20 segundos; quien no juega pierde ese juego si su rival sí jugó.
+- Los enfrentamientos de una misma ronda se juegan a la vez. Cuando terminan todos, la siguiente ronda empieza sola tras unos segundos.
+- Si los dos dejan de jugar dos juegos seguidos, o el enfrentamiento llega a 9 juegos, avanza quien tenga más victorias y, si siguen empatados, el mejor sembrado.
+- Salir durante el torneo cuenta como abandono: el rival avanza y el resto sigue jugando. Al terminar, el anfitrión puede preparar otro torneo.
 
 ### Configurar Supabase y Vercel
 
@@ -42,7 +49,7 @@ node --env-file=.env.local scripts/test-rooms-api.mjs
 # También acepta una URL desplegada como argumento.
 ```
 
-La prueba de integración usa sesiones invitadas independientes y comprueba entradas simultáneas, máximo de cuatro, aislamiento, permisos, jugadas ocultas y partidas completas de 3 y 5 rondas. No necesita cuentas de prueba.
+La prueba de integración usa sesiones invitadas independientes y comprueba entradas simultáneas, máximo de dos, modo por equipos desactivado, aislamiento, permisos, jugadas ocultas y partidas completas de 3 y 5 rondas. No necesita cuentas de prueba.
 
 ## Ejecutar
 
@@ -71,9 +78,11 @@ Usa una sola mano, con la palma hacia la cámara y buena iluminación. La barra 
 - `app/arena-nav.tsx`, `app/arena.css` y `app/hand-icon.tsx`: barra superior, pestañas de modo, estilo de arcade y manos ilustradas que comparten la arena y las salas.
 - `lib/game.ts`: gestos admitidos, elección aleatoria y reglas.
 - `lib/hold.ts`: tiempo que hay que mantener un gesto para lanzar la ronda contra la computadora.
+- `lib/tournament.ts`: bracket, pases, enfrentamientos al mejor de 3 y avance de rondas del torneo.
 - `public/mediapipe`: modelo y runtime WASM servidos por la aplicación.
 - `tests/game.test.ts`: las nueve combinaciones de resultados y validación de gestos.
 - `tests/hold.test.ts`: disparo al mantener un gesto, rearme y tolerancia a pérdidas breves de detección.
+- `tests/tournament.test.ts`: tamaños de bracket, pases, mejor de 3, tiempos, avance de rondas, abandono y salas de torneo.
 
 La computadora elige aleatoriamente antes de que el usuario empiece a mantener su gesto. No consulta el gesto reconocido para elegir. El reconocimiento analiza hasta unos 12 fotogramas por segundo en el dispositivo; no se envían ni almacenan imágenes. Al cambiar de pestaña, desactivar la cámara o salir de la página se detiene la cámara y se cancela la ronda activa.
 

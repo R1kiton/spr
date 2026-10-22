@@ -23,7 +23,8 @@ function playerName(value: unknown): string {
 }
 
 function settings(data: Record<string, unknown>): { mode: RoomMode; roundLimit: 3 | 5 } {
-  if (data.mode !== "solo" && data.mode !== "teams") throw new RoomApiError("Elige todos contra todos o equipos.");
+  // Rooms offer 1v1 duels and tournaments; 2v2 teams stay off even though lib/rooms.ts supports them.
+  if (data.mode !== "solo" && data.mode !== "tournament") throw new RoomApiError("Elige un duelo o un torneo.");
   if (data.roundLimit !== 3 && data.roundLimit !== 5) throw new RoomApiError("Elige 3 o 5 rondas.");
   return { mode: data.mode, roundLimit: data.roundLimit };
 }

@@ -1,6 +1,10 @@
 import { moves as legalMoves, outcome, type Move } from "./game";
+import {
+  activeMatch, createTournament, forfeit, matchesWon, publicTournament, settleTournament, submitTournamentMove,
+  TOURNAMENT_MAX_PLAYERS, TOURNAMENT_MIN_PLAYERS, type PublicTournament, type Tournament,
+} from "./tournament";
 
-export type RoomMode = "solo" | "teams";
+export type RoomMode = "solo" | "teams" | "tournament";
 export type RoomPhase = "lobby" | "playing" | "between" | "finished";
 export type Team = "a" | "b";
 
@@ -37,6 +41,8 @@ export interface StoredRoom {
   createdAt: number;
   updatedAt: number;
   matchId: string;
+  /** Bracket state while a tournament is running; absent in duels and in rooms stored before tournaments. */
+  tournament?: Tournament | null;
 }
 
 export type RoomPlayerInput = Pick<StoredPlayer, "id" | "name" | "tokenHash">;
@@ -54,14 +60,18 @@ export type PublicPlayer = Omit<StoredPlayer, "tokenHash"> & {
   online: boolean;
 };
 
-export type PublicRoom = Omit<StoredRoom, "players"> & {
+export type PublicRoom = Omit<StoredRoom, "players" | "tournament"> & {
   players: PublicPlayer[];
+  tournament: PublicTournament | null;
   meId: string | null;
   serverNow: number;
   ownMove: Move | null;
   teamScores: { a: number; b: number };
 };
 
+/** Seats offered per room. The engine supports up to 4 (including 2v2 teams); rooms are 1v1 duels for now. */
+export const MAX_PLAYERS = 2;
+export const capacityFor = (mode: RoomMode) => mode === "tournament" ? TOURNAMENT_MAX_PLAYERS : mode === "teams" ? 4 : MAX_PLAYERS;
 export const ROUND_DURATION_MS = 20_000;
 export const ONLINE_DURATION_MS = 30_000;
 export const STALE_DURATION_MS = 60_000;
@@ -78,11 +88,12 @@ function cloneRoom(room: StoredRoom): StoredRoom {
       teamPoints: { ...round.teamPoints },
       winners: [...round.winners],
     })),
+    tournament: room.tournament ? structuredClone(room.tournament) : null,
   };
 }
 
 function validateSettings(mode: RoomMode, roundLimit: 3 | 5) {
-  if (mode !== "solo" && mode !== "teams") throw new Error("El modo de juego no es válido.");
+  if (mode !== "solo" && mode !== "teams" && mode !== "tournament") throw new Error("El modo de juego no es válido.");
   if (roundLimit !== 3 && roundLimit !== 5) throw new Error("Elige una partida de 3 o 5 rondas.");
 }
 
@@ -128,12 +139,15 @@ function resetMatch(room: StoredRoom) {
   room.moves = {};
   room.history = [];
   room.matchId = crypto.randomUUID();
+  room.tournament = null;
   for (const player of room.players) player.score = 0;
 }
 
 function refreshScores(room: StoredRoom) {
   for (const player of room.players) {
-    player.score = room.history.reduce((sum, round) => sum + (round.points[player.id] ?? 0), 0);
+    // In a tournament the score is matches won; elsewhere it is points across rounds.
+    player.score = room.tournament ? matchesWon(room.tournament, player.id)
+      : room.history.reduce((sum, round) => sum + (round.points[player.id] ?? 0), 0);
   }
 }
 
@@ -200,7 +214,7 @@ export function createRoom(code: string, player: RoomPlayerInput, mode: RoomMode
   };
 }
 
-export function joinRoom(room: StoredRoom, player: RoomPlayerInput, now: number): StoredRoom {
+export function joinRoom(room: StoredRoom, player: RoomPlayerInput, now: number, capacity = capacityFor(room.mode)): StoredRoom {
   let next = cloneRoom(room);
   const existing = next.players.find((member) => member.tokenHash === player.tokenHash);
   if (existing) {
@@ -211,7 +225,7 @@ export function joinRoom(room: StoredRoom, player: RoomPlayerInput, now: number)
   }
   next = settleRoom(next, now);
   if (next.phase !== "lobby") throw new Error("La partida ya comenzó. Espera a que vuelvan a la sala.");
-  if (next.players.length >= 4) throw new Error("La sala está llena. El máximo es de 4 jugadores.");
+  if (next.players.length >= capacity) throw new Error(`La sala está llena. El máximo es de ${capacity} jugadores.`);
   const added = makePlayer(player, next.mode === "teams" ? assignTeam(next) : null, now);
   if (next.players.some((member) => member.id === added.id)) throw new Error("La sesión del jugador ya está en uso.");
   if (next.players.some((member) => member.name.toLocaleLowerCase("es") === added.name.toLocaleLowerCase("es"))) {
@@ -234,7 +248,11 @@ export function settleRoom(room: StoredRoom, now: number): StoredRoom {
   const oldHost = next.hostId;
   assignHost(next, now);
   changed ||= oldHost !== next.hostId;
-  if (next.phase === "playing" && next.deadline !== null && now >= next.deadline) {
+  if (next.phase === "playing" && next.tournament) {
+    const before = JSON.stringify(next.tournament);
+    if (settleTournament(next.tournament, now)) next.phase = "finished";
+    changed ||= before !== JSON.stringify(next.tournament);
+  } else if (next.phase === "playing" && next.deadline !== null && now >= next.deadline) {
     resolveRound(next);
     changed = true;
   }
@@ -267,6 +285,7 @@ export function applyRoomAction(room: StoredRoom, playerId: string, action: Room
       hostOnly();
       lobbyOnly();
       validateSettings(action.mode, action.roundLimit);
+      if (next.players.length > capacityFor(action.mode)) throw new Error("Hay demasiados jugadores en la sala para ese modo.");
       if (next.mode !== action.mode) {
         next.players.forEach((member, index) => { member.team = action.mode === "teams" ? (index % 2 === 0 ? "a" : "b") : null; });
       }
@@ -276,6 +295,14 @@ export function applyRoomAction(room: StoredRoom, playerId: string, action: Room
     case "start":
       hostOnly();
       lobbyOnly();
+      if (next.mode === "tournament") {
+        if (next.players.length < TOURNAMENT_MIN_PLAYERS) throw new Error(`Un torneo necesita al menos ${TOURNAMENT_MIN_PLAYERS} jugadores.`);
+        resetMatch(next);
+        next.tournament = createTournament(next.players, now);
+        next.round = 1;
+        next.phase = "playing";
+        break;
+      }
       if (next.players.length < 2) throw new Error("Necesitas al menos 2 jugadores para comenzar.");
       if (next.mode === "teams" && (next.players.length !== 4 ||
           next.players.filter((member) => member.team === "a").length !== 2 ||
@@ -287,6 +314,14 @@ export function applyRoomAction(room: StoredRoom, playerId: string, action: Room
       break;
     case "move": {
       if (!legalMoves.includes(action.move)) throw new Error("Elige piedra, papel o tijera.");
+      if (next.tournament) {
+        if (action.matchId !== next.matchId) throw new Error("La ronda cambió. Actualiza la sala y vuelve a elegir.");
+        if (next.phase !== "playing") throw new Error("El torneo ya terminó.");
+        // In a tournament `round` is the game number inside the player's current match.
+        submitTournamentMove(next.tournament, playerId, action.move, action.round, now);
+        if (settleTournament(next.tournament, now)) next.phase = "finished";
+        break;
+      }
       if (action.matchId !== next.matchId || action.round !== next.round) {
         throw new Error("La ronda cambió. Actualiza la sala y vuelve a elegir.");
       }
@@ -303,6 +338,7 @@ export function applyRoomAction(room: StoredRoom, playerId: string, action: Room
     }
     case "next":
       hostOnly();
+      if (next.tournament) throw new Error("El torneo avanza solo cuando terminan todos los enfrentamientos.");
       if (next.phase !== "between") throw new Error("Todavía no puedes abrir la siguiente ronda.");
       openRound(next, next.round + 1, now);
       break;
@@ -313,7 +349,11 @@ export function applyRoomAction(room: StoredRoom, playerId: string, action: Room
       break;
     case "leave":
       next.players = next.players.filter((member) => member.id !== playerId);
-      if (next.phase !== "lobby") resetMatch(next);
+      if (next.tournament && next.phase === "playing") {
+        // Leaving a tournament forfeits; everyone else keeps playing.
+        forfeit(next.tournament, playerId);
+        if (settleTournament(next.tournament, now)) next.phase = "finished";
+      } else if (next.phase !== "lobby") resetMatch(next);
       assignHost(next, now);
       break;
     default:
@@ -331,17 +371,20 @@ export function publicRoom(room: StoredRoom, viewerId: string | null, now: numbe
     a: total.a + round.teamPoints.a,
     b: total.b + round.teamPoints.b,
   }), { a: 0, b: 0 });
+  const tournament = next.tournament ?? null;
+  const pendingMoves = (id: string) => tournament ? activeMatch(tournament, id)?.moves ?? {} : next.moves;
   return {
     ...next,
     moves: next.phase === "playing" ? {} : { ...next.moves },
     players: next.players.map(({ tokenHash: _secret, ...player }) => ({
       ...player,
-      submitted: Boolean(next.moves[player.id]),
+      submitted: Boolean(pendingMoves(player.id)[player.id]),
       online: now - player.lastSeenAt <= ONLINE_DURATION_MS,
     })),
     meId,
     serverNow: now,
-    ownMove: meId ? next.moves[meId] ?? null : null,
+    ownMove: meId ? pendingMoves(meId)[meId] ?? null : null,
     teamScores,
+    tournament: tournament ? publicTournament(tournament) : null,
   };
 }

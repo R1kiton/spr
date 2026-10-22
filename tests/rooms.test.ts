@@ -7,6 +7,7 @@ import {
   joinRoom,
   publicRoom,
   settleRoom,
+  MAX_PLAYERS,
   ROUND_DURATION_MS,
   type RoomMode,
   type StoredRoom,
@@ -15,9 +16,10 @@ import {
 const NOW = 10_000;
 const participant = (number: number) => ({ id: `p${number}`, name: `Jugador ${number}`, tokenHash: `secret-${number}` });
 
+// Rooms default to MAX_PLAYERS seats; larger lobbies pass the engine's full capacity of 4 explicitly.
 function lobby(count = 2, mode: RoomMode = "solo", roundLimit: 3 | 5 = 3): StoredRoom {
   let room = createRoom("ABC123", participant(1), mode, roundLimit, NOW);
-  for (let index = 2; index <= count; index++) room = joinRoom(room, participant(index), NOW + index);
+  for (let index = 2; index <= count; index++) room = joinRoom(room, participant(index), NOW + index, 4);
   return room;
 }
 
@@ -56,11 +58,16 @@ test("joining is idempotent by private session even if the room is full or playi
   assert.equal(room.players[1].lastSeenAt, NOW + 2);
 });
 
-test("rooms reject a fifth player, duplicate names, duplicate IDs, and late arrivals", () => {
-  assert.throws(() => joinRoom(lobby(4), participant(5), NOW + 10), /llena/);
-  assert.throws(() => joinRoom(lobby(), { ...participant(3), name: " jugador 1 " }, NOW + 10), /nombre/);
-  assert.throws(() => joinRoom(lobby(), { ...participant(3), id: "p1" }, NOW + 10), /sesión/);
-  assert.throws(() => joinRoom(start(), participant(3), NOW + 30), /ya comenzó/);
+test("rooms are 1v1 by default and reject a third player", () => {
+  assert.equal(MAX_PLAYERS, 2);
+  assert.throws(() => joinRoom(lobby(), participant(3), NOW + 10), /llena\. El máximo es de 2 jugadores/);
+});
+
+test("rooms reject players beyond capacity, duplicate names, duplicate IDs, and late arrivals", () => {
+  assert.throws(() => joinRoom(lobby(4), participant(5), NOW + 10, 4), /llena/);
+  assert.throws(() => joinRoom(lobby(1), { ...participant(2), name: " jugador 1 " }, NOW + 10), /nombre/);
+  assert.throws(() => joinRoom(lobby(1), { ...participant(2), id: "p1" }, NOW + 10), /sesión/);
+  assert.throws(() => joinRoom(start(), participant(3), NOW + 30, 4), /ya comenzó/);
 });
 
 test("only the host controls settings, starts, next rounds, and rematches", () => {
@@ -198,8 +205,10 @@ test("2v2 scores only enemy pairings and derives shared team totals from history
 test("mode changes reset team allocation and only happen in the lobby", () => {
   const teams = applyRoomAction(lobby(4), "p1", { type: "settings", mode: "teams", roundLimit: 5 }, NOW + 10);
   assert.deepEqual(teams.players.map((player) => player.team), ["a", "b", "a", "b"]);
-  const solo = applyRoomAction(teams, "p1", { type: "settings", mode: "solo", roundLimit: 3 }, NOW + 20);
-  assert.deepEqual(solo.players.map((player) => player.team), [null, null, null, null]);
+  assert.throws(() => applyRoomAction(teams, "p1", { type: "settings", mode: "solo", roundLimit: 3 }, NOW + 20), /demasiados jugadores/);
+  const pair = applyRoomAction(lobby(2), "p1", { type: "settings", mode: "teams", roundLimit: 5 }, NOW + 10);
+  const solo = applyRoomAction(pair, "p1", { type: "settings", mode: "solo", roundLimit: 3 }, NOW + 20);
+  assert.deepEqual(solo.players.map((player) => player.team), [null, null]);
   assert.throws(() => applyRoomAction(start(), "p1", { type: "settings", mode: "teams", roundLimit: 5 }, NOW + 20), /antes de iniciar/);
 });
 

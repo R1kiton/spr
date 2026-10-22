@@ -48,14 +48,6 @@
 .room-code-input::placeholder{color:#4b3d78;letter-spacing:8px}
 .room-field-hint{margin:8px 0 0;color:var(--muted);font-size:13px}
 .room-fieldset{min-width:0;margin:20px 0 0;padding:0;border:0}
-.room-mode-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.room-mode-options button{flex-direction:column;align-items:flex-start;gap:4px;padding:12px 14px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px;color:var(--muted);text-align:left}
-.room-mode-options button[aria-pressed=true]{border-color:var(--gold);box-shadow:4px 4px 0 #000;background:#1d1140}
-.room-mode-options button:hover:not([aria-pressed=true]):not(:disabled){border-color:var(--muted)}
-.room-mode-art{display:flex;align-items:center;gap:1px;height:38px;font-size:34px}
-.room-mode-art i{margin:0 4px;font:400 13px var(--display);font-style:normal;color:var(--gold)}
-.room-mode-options strong{color:var(--ink);font:400 15px var(--display)}
-.room-mode-options small{font-size:12px}
 .room-round-options{display:flex;gap:10px}
 .room-round-options button{flex:1;gap:6px;min-height:44px;background:var(--shadow);border:2px solid var(--rim);border-radius:3px;color:var(--muted);font-size:14px;font-weight:700;transform:skewX(-10deg)}
 .room-round-options button[aria-pressed=true]{background:var(--gold);border-color:var(--gold);color:var(--shadow)}
@@ -66,7 +58,7 @@
 /* Entry poster */
 .room-invite-art{position:relative;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:30px 28px 66px;background:linear-gradient(var(--gold),var(--gold)) 0 calc(100% - 40px)/100% 3px no-repeat,linear-gradient(#0000 calc(100% - 40px),#1d0f3a calc(100% - 40px),#120927),linear-gradient(#24124d,#5a2470 55%,#d9503f)}
 .room-art-tag{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px;background:#3ddc84;color:var(--shadow);border-radius:3px;font-size:12px;font-weight:700;transform:skewX(-10deg)}
-.room-art-hands{position:relative;display:grid;grid-template-columns:repeat(2,auto);justify-content:center;gap:4px 34px;margin:20px 0 14px;font-size:70px;filter:drop-shadow(4px 4px 0 var(--shadow))}
+.room-art-hands{position:relative;display:grid;grid-template-columns:repeat(2,auto);justify-content:center;gap:4px 84px;margin:20px 0 14px;font-size:70px;filter:drop-shadow(4px 4px 0 var(--shadow))}
 .room-art-hands .hand:nth-child(odd){transform:rotate(-8deg)}
 .room-art-hands .hand:nth-child(even){transform:rotate(8deg)}
 .room-art-hands i{position:absolute;top:50%;left:50%;font:400 30px var(--display);font-style:normal;color:var(--gold);-webkit-text-stroke:6px var(--shadow);paint-order:stroke fill;transform:translate(-50%,-50%) skewX(-12deg)}
@@ -135,19 +127,6 @@
 .room-player i.online{background:#3ddc84}
 .room-host-label{display:flex;align-items:center;gap:5px;margin-left:auto;color:var(--gold);font-size:12px;font-weight:700}
 .room-empty-slot{display:flex;justify-content:center;align-items:center;gap:8px;height:62px;border:2px dashed var(--rim);border-radius:4px;color:var(--muted);font-size:14px}
-.room-teams{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.room-team{display:flex;flex-direction:column;gap:8px;padding:12px;background:#1a0f3a;border:2px solid var(--rim);border-top:5px solid var(--p1);border-radius:4px}
-.room-team-b{border-top-color:var(--p2)}
-.room-team-heading{display:flex;justify-content:space-between;align-items:center}
-.room-team-heading strong{font:400 16px var(--display)}
-.room-team-a .room-team-heading strong{color:var(--p1-text)}
-.room-team-b .room-team-heading strong{color:var(--p2-text)}
-.room-team-heading span{color:var(--muted);font-size:13px;font-weight:700}
-.room-team-join{gap:6px;padding:10px;background:var(--stage-hi);border:2px solid var(--rim);border-radius:3px;color:var(--ink);font-size:13px;font-weight:700}
-.room-team-join:hover:not(:disabled){border-color:var(--gold)}
-.room-team-join:disabled{opacity:1;color:var(--gold);cursor:default}
-.room-unassigned{display:grid;gap:8px;margin-top:14px}
-.room-unassigned>span{color:var(--muted);font-size:13px;font-weight:700}
 .room-waiting-hint{display:flex;align-items:center;gap:8px;margin-top:16px;color:var(--muted);font-size:13px}
 .room-settings .room-fieldset:first-of-type{margin-top:6px}
 .room-setting-buttons{display:grid;gap:8px}
@@ -205,11 +184,6 @@
 .room-host-wait{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}
 
 /* Scoreboard */
-.room-team-scores{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.room-team-scores>div{display:flex;flex-direction:column;align-items:center;padding:10px;background:var(--shadow);border:2px solid var(--p1);border-radius:4px}
-.room-team-scores>.room-team-score-b{border-color:var(--p2)}
-.room-team-scores span{color:var(--muted);font-size:13px;font-weight:700}
-.room-team-scores strong{font:400 34px/1.1 var(--display);color:var(--gold);-webkit-text-stroke:5px var(--shadow);paint-order:stroke fill}
 .room-ranking{display:grid;gap:8px}
 .room-ranking-player{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px}
 .room-ranking-player.is-me{border-color:var(--gold)}
@@ -245,7 +219,6 @@
   .room-entry-grid{grid-template-columns:1fr;max-width:480px}
   .room-invite-art{display:none}
   .room-quick-guide{grid-template-columns:1fr;max-width:480px;gap:14px}
-  .room-mode-art{font-size:26px}
   .room-bar{flex-wrap:wrap;padding:12px 14px}
   .room-bar>div:last-child{flex:1;justify-content:flex-end}
   .room-code{font-size:24px;letter-spacing:3px}
@@ -254,7 +227,6 @@
   .room-camera-active{height:220px}
   .room-camera-off{flex-direction:column;align-items:stretch}
   .room-card{padding:18px 16px}
-  .room-teams{grid-template-columns:1fr}
   .room-match-heading{flex-wrap:wrap}
   .room-move-buttons{gap:8px}
   .room-move-buttons button{padding:14px 4px 12px}
@@ -264,5 +236,57 @@
 }
 @media (max-width:400px){
   .room-tabs button{font-size:12px;padding:11px 6px}
-  .room-mode-options{grid-template-columns:1fr}
+}
+
+/* Room kind: duel or tournament */
+.room-kind-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.room-kind-options button{flex-direction:column;align-items:flex-start;gap:4px;padding:12px 14px;background:var(--shadow);border:2px solid var(--rim);border-radius:4px;color:var(--muted);text-align:left}
+.room-kind-options button[aria-pressed=true]{background:#1d1140;border-color:var(--gold);box-shadow:4px 4px 0 #000}
+.room-kind-options button:hover:not([aria-pressed=true]):not(:disabled){border-color:var(--muted)}
+.room-kind-options strong{color:var(--ink);font:400 17px var(--display)}
+.room-kind-options small{font-size:12px}
+
+/* Tournament: your match on top, the bracket below */
+.tournament-mine{margin-bottom:18px}
+.tournament-versus{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;padding:6px 0 16px;border-bottom:1px solid var(--rim);margin-bottom:14px}
+.tournament-side{display:flex;flex-direction:column;gap:8px;min-width:0}
+.tournament-side.rival{align-items:flex-end;text-align:right}
+.tournament-side strong{overflow:hidden;font:400 20px var(--display);white-space:nowrap;text-overflow:ellipsis}
+.tournament-side.you strong{color:var(--p2-text)}
+.tournament-side.rival strong{color:var(--p1-text)}
+.tournament-side strong small{color:var(--gold);font:700 12px "Chakra Petch",sans-serif}
+.tournament-pips{display:flex;gap:6px}
+.tournament-pips i{width:26px;height:12px;background:var(--shadow);border:2px solid var(--rim);transform:skewX(-20deg)}
+.tournament-side.you .tournament-pips i.won{background:var(--p2);border-color:var(--shadow)}
+.tournament-side.rival .tournament-pips i.won{background:var(--p1);border-color:var(--shadow)}
+.tournament-game{padding:8px 12px;background:var(--shadow);border:3px solid var(--gold);border-radius:4px;font:400 15px var(--display);white-space:nowrap}
+.tournament-last{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:10px;color:var(--muted);font-size:14px;font-weight:700}
+.tournament-last .move-object{font-size:40px;filter:drop-shadow(2px 2px 0 #000)}
+.tournament-last .move-object.is-empty{opacity:.25}
+.tournament-champion,.tournament-waiting{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0;text-align:center}
+.tournament-champion h2{margin:4px 0;font:400 clamp(30px,4.4vw,46px)/1.1 var(--display);color:var(--gold);-webkit-text-stroke:7px var(--shadow);paint-order:stroke fill;text-shadow:5px 5px 0 var(--p1)}
+.tournament-champion p,.tournament-waiting p{margin:0 0 10px;color:var(--muted)}
+.tournament-waiting h3{margin:8px 0 0;font:400 22px var(--display)}
+.tournament-bracket{display:grid;gap:14px;overflow-x:auto;padding-bottom:6px}
+.tournament-round{display:flex;flex-direction:column;min-width:190px}
+.tournament-round h3{margin:0 0 10px;color:var(--muted);font-size:13px;font-weight:700}
+.tournament-round.is-current h3{color:var(--gold)}
+.tournament-round-matches{display:flex;flex:1;flex-direction:column;justify-content:space-around;gap:10px}
+.tournament-match{position:relative;background:var(--shadow);border:2px solid var(--rim);border-radius:4px}
+.tournament-match.is-live{border-color:var(--gold);box-shadow:3px 3px 0 #000}
+.tournament-match.is-live:after{content:"";position:absolute;top:-5px;right:-5px;width:10px;height:10px;background:#3ddc84;border:2px solid var(--shadow);border-radius:50%}
+.tournament-match>small{display:block;padding:0 10px 6px;color:var(--muted);font-size:11px}
+.tournament-slot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;font-size:14px}
+.tournament-slot+.tournament-slot{border-top:1px solid var(--rim)}
+.tournament-slot>span{display:flex;align-items:center;gap:5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tournament-slot b{font:400 15px var(--display);color:var(--muted)}
+.tournament-slot.is-winner span,.tournament-slot.is-winner b{color:var(--gold)}
+.tournament-slot.is-winner svg{flex-shrink:0;color:var(--gold)}
+.tournament-slot.is-out{opacity:.45}
+.tournament-slot.is-me{box-shadow:inset 4px 0 0 var(--p2)}
+.tournament-slot.is-me span{color:var(--p2-text);font-weight:700}
+@media (max-width:680px){
+  .room-kind-options{grid-template-columns:1fr}
+  .tournament-side strong{font-size:16px}
+  .tournament-pips i{width:18px}
 }
